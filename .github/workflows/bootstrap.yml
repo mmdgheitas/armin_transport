@@ -1,0 +1,97 @@
+# Temporary toolchain probe: discovers the stable Flutter toolchain, generates the
+# Android/Windows platform scaffolding and validates plugin builds on both targets.
+name: Bootstrap probe
+
+on:
+  push:
+    branches: ["arena/**"]
+    paths: [".github/workflows/bootstrap.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+concurrency:
+  group: bootstrap-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_PACKAGES: flutter_riverpod go_router dio flutter_secure_storage file_picker path_provider path intl
+
+jobs:
+  scaffold:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: false
+      - name: Generate scaffold and resolve dependencies
+        shell: bash
+        run: |
+          set -x
+          OUT="$RUNNER_TEMP/out"; mkdir -p "$OUT"
+          { flutter --version; echo; flutter doctor -v; echo; java -version 2>&1; echo "JAVA_HOME=$JAVA_HOME"; echo "ANDROID_HOME=$ANDROID_HOME"; ls "$ANDROID_HOME/platforms" "$ANDROID_HOME/build-tools" "$ANDROID_HOME/ndk" 2>&1; cat /etc/os-release | head -3; } > "$OUT/versions.txt" 2>&1 || true
+          cd "$RUNNER_TEMP"
+          flutter create --platforms=android,windows --org ir.armintransport --project-name armin_transport app > "$OUT/create.txt" 2>&1
+          cd app
+          flutter pub add $FLUTTER_PACKAGES > "$OUT/pubadd.txt" 2>&1 || true
+          flutter pub add flutter_localizations --sdk=flutter >> "$OUT/pubadd.txt" 2>&1 || true
+          flutter pub deps --style=compact > "$OUT/deps.txt" 2>&1 || true
+          flutter pub outdated > "$OUT/outdated.txt" 2>&1 || true
+          find . -type f -not -path './.dart_tool/*' -not -path './build/*' -not -path './.idea/*' | sort > "$OUT/files.txt"
+          tar czf "$OUT/scaffold.tgz" --exclude=.dart_tool --exclude=build --exclude=.idea .
+          base64 -w0 "$OUT/scaffold.tgz" > "$OUT/scaffold.b64.txt"
+          ls -la "$OUT"
+      - name: Publish scaffold
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node tools/ci/publish-check.mjs scaffold "$RUNNER_TEMP"/out/*.txt
+      - name: Build Android APK (release)
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP/app"
+          set -o pipefail
+          flutter build apk --release 2>&1 | tee "$RUNNER_TEMP/out/android-build.log"
+      - name: Publish Android build log
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PUBLISH_TAIL_CHARS: "50000"
+        run: node tools/ci/publish-check.mjs android "$RUNNER_TEMP/out/android-build.log"
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: false
+      - name: Create project and build Windows release
+        shell: bash
+        run: |
+          set -x
+          OUT="$RUNNER_TEMP/out"; mkdir -p "$OUT"
+          { flutter --version; echo; flutter doctor -v; } > "$OUT/windows-versions.txt" 2>&1 || true
+          cd "$RUNNER_TEMP"
+          flutter create --platforms=android,windows --org ir.armintransport --project-name armin_transport app > "$OUT/windows-create.txt" 2>&1
+          cd app
+          flutter pub add $FLUTTER_PACKAGES > "$OUT/windows-pubadd.txt" 2>&1 || true
+          flutter pub add flutter_localizations --sdk=flutter >> "$OUT/windows-pubadd.txt" 2>&1 || true
+          set -o pipefail
+          flutter build windows --release 2>&1 | tee "$OUT/windows-build.log"
+      - name: Publish Windows diagnostics
+        if: always()
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PUBLISH_TAIL_CHARS: "50000"
+        run: node tools/ci/publish-check.mjs windows "$RUNNER_TEMP/out/windows-versions.txt" "$RUNNER_TEMP/out/windows-build.log"
