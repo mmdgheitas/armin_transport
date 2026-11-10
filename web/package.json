@@ -1,0 +1,27 @@
+{
+  "name": "armin-transport-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Armin Transport web client (plain HTML, CSS and ES modules; no framework, no bundler).",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "build": "node scripts/build.mjs",
+    "lint": "eslint .",
+    "test": "node --test \"tests/unit/**/*.test.js\"",
+    "test:e2e": "node --test --test-concurrency=1 \"tests/e2e/**/*.test.js\"",
+    "check": "npm run lint && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.14.0",
+    "globals": "17.14.0",
+    "puppeteer-core": "25.16.0"
+  },
+  "optionalDependencies": {
+    "@sparticuz/chromium": "153.0.0"
+  }
+}
