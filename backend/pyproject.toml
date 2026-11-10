@@ -1,0 +1,61 @@
+[project]
+name = "armin-transport-backend"
+version = "1.0.0"
+description = "Multi-tenant shipment and document management REST API"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "mysql: test requires a real MySQL server (skipped on the SQLite fallback)",
+]
+filterwarnings = [
+    "error::sqlalchemy.exc.SAWarning",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "C4", "SIM", "S", "PL", "RUF", "N", "DTZ", "T20", "PT"]
+ignore = [
+    "E501",     # line length is handled by the formatter; long Persian messages are not wrapped
+    "PLR0913",  # explicit keyword-rich service signatures are intentional
+    "PLR0917",  # constructor injection legitimately takes many collaborators
+    "PLR2004",  # HTTP status codes and small literals in tests
+    "RUF001",   # Persian user-facing strings contain "ambiguous" unicode characters
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# PT018: scenario tests deliberately keep closely related checks on one line
+"tests/**" = ["S101", "S105", "S106", "S311", "PLR0915", "PT018"]
+"migrations/**" = ["E501", "N999"]
+"app/seeds.py" = ["S105", "S106"]
+# marshmallow reads these dictionaries as (mutable) class attributes by design
+"app/core/fields.py" = ["RUF012"]
+"app/core/schemas.py" = ["RUF012"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["app", "wsgi.py"]
+strict = true
+warn_unused_ignores = true
+warn_return_any = true
+disallow_untyped_decorators = false
+plugins = []
+
+[[tool.mypy.overrides]]
+module = ["flask_migrate.*", "flask_cors.*", "apispec.*", "argon2.*", "pymysql.*"]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

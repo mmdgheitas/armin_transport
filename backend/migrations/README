@@ -1,0 +1,7 @@
+Database migrations (Alembic through Flask-Migrate). See docs/DEPLOYMENT.md.
+
+    flask db upgrade      # apply pending migrations
+    flask db downgrade    # revert the latest migration
+    flask db current      # show the revision of the connected database
+
+Migration files never import application code, so they stay valid when models change.

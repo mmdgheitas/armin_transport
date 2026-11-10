@@ -1,0 +1,7 @@
+# Development, test and static-analysis dependencies.
+-r requirements.txt
+pytest==9.2.0
+pytest-cov==7.1.0
+ruff==0.17.4
+mypy==2.4.1
+openapi-spec-validator==0.9.0
