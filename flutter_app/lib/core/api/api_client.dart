@@ -76,19 +76,16 @@ String filenameFromContentDisposition(String? header, {String fallback = 'downlo
 }
 
 class ApiClient {
+  /// [readSession], [writeSession] and [endSession] connect the client to wherever the app keeps its session;
+  /// [endSession] is called with `null` after a logout and with the reason when the server ends the session.
   ApiClient({
     required String baseUrl,
-    required Dio dio,
-    required AuthSession? Function() readSession,
-    required void Function(AuthSession session) writeSession,
-    required void Function(ApiError? reason) endSession,
-    DateTime Function() now = DateTime.now,
-  }) : baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), ''),
-       _dio = dio,
-       _readSession = readSession,
-       _writeSession = writeSession,
-       _endSession = endSession,
-       _now = now;
+    required this._dio,
+    required this._readSession,
+    required this._writeSession,
+    required this._endSession,
+    this._now = DateTime.now,
+  }) : baseUrl = baseUrl.replaceAll(RegExp(r'/+$'), '');
 
   /// A [Dio] with the timeouts this client expects. Statuses are handled here, so none of them throws.
   static Dio createDio() => Dio(

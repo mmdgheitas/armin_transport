@@ -17,15 +17,12 @@ import 'storage.dart';
 /// When the storage of the device fails, the app keeps working and only forgets its state when it is closed.
 class AppSession extends ChangeNotifier {
   AppSession({
-    required AppStorage storage,
-    String? serverUrl,
-    AuthSession? auth,
+    required this._storage,
+    this._serverUrl,
+    this._auth,
     this.serverIsFixed = false,
-    DateTime Function() now = DateTime.now,
-  }) : _storage = storage,
-       _serverUrl = serverUrl,
-       _auth = auth,
-       _now = now;
+    this._now = DateTime.now,
+  });
 
   /// Restores the state of the previous run.
   ///

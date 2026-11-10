@@ -1,0 +1,137 @@
+/// Starts the whole app for a screen test: a session in memory, a scripted server and no real file dialogs.
+library;
+
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:armin_transport/app.dart';
+import 'package:armin_transport/core/api/models.dart';
+import 'package:armin_transport/core/files.dart';
+import 'package:armin_transport/core/providers.dart';
+import 'package:armin_transport/core/session.dart';
+import 'package:armin_transport/core/storage.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+
+import '../../support/fakes.dart';
+
+const String testServer = 'https://armin.test/api/v1';
+
+/// A desktop window and a phone in portrait.
+const Size desktopSize = Size(1280, 800);
+const Size phoneSize = Size(390, 800);
+
+typedef RouteHandler = FutureOr<ResponseBody> Function(RecordedRequest request);
+
+/// A scripted server: answers by method and path below the API root, e.g. `'GET /shipments'`.
+/// A request that the test did not expect gets a 404 that names it.
+FakeHandler serverWith(Map<String, RouteHandler> routes) => (request) {
+  final path = request.path.startsWith('/api/v1') ? request.path.substring('/api/v1'.length) : request.path;
+  final handler = routes['${request.method} $path'];
+  if (handler == null) {
+    return errorResponse(404, 'not_found', message: 'آزمون پاسخی برای ${request.method} $path ندارد.');
+  }
+  return handler(request);
+};
+
+/// The profile as `/auth/me` reports it.
+Json profileOf(Json auth) => {
+  'user': auth['user'],
+  'permissions': auth['permissions'],
+  'app_settings': auth['app_settings'],
+};
+
+/// File dialogs that answer at once with what the test prepared.
+class FakeFileGateway implements FileGateway {
+  List<PickedFile> toPick = <PickedFile>[];
+  bool saveResult = true;
+  final List<({String name, Uint8List bytes, String mimeType})> saved = [];
+  int discarded = 0;
+
+  @override
+  Future<List<PickedFile>> pickFiles({List<String> allowedExtensions = const <String>[], String? dialogTitle}) async =>
+      toPick;
+
+  @override
+  Future<bool> saveFile({
+    required String name,
+    required Uint8List bytes,
+    required String mimeType,
+    String? dialogTitle,
+  }) async {
+    if (saveResult) saved.add((name: name, bytes: bytes, mimeType: mimeType));
+    return saveResult;
+  }
+
+  @override
+  Future<void> discardTemporaryFiles() async {
+    discarded += 1;
+  }
+}
+
+class AppHarness {
+  AppHarness(this.adapter, this.session, this.files);
+
+  final FakeAdapter adapter;
+  final AppSession session;
+  final FakeFileGateway files;
+
+  List<RecordedRequest> get calls => adapter.calls;
+
+  /// The requests so far as "METHOD /path", without the API root.
+  List<String> get requests => [
+    for (final call in calls) '${call.method} ${call.path.replaceFirst('/api/v1', '')}',
+  ];
+}
+
+/// Starts the app and waits until the first screen has settled.
+///
+/// [auth] is the `data` of a login response (`authPayload()`, `adminAuthPayload()`); without it nobody is signed in.
+Future<AppHarness> pumpApp(
+  WidgetTester tester, {
+  Map<String, RouteHandler> routes = const <String, RouteHandler>{},
+  String? server = testServer,
+  bool serverIsFixed = false,
+  Json? auth,
+  String? location,
+  Size size = desktopSize,
+}) async {
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+
+  final adapter = FakeAdapter(
+    serverWith({
+      // Read in the background at every start with a stored session.
+      if (auth != null) 'GET /auth/me': (request) => ok(profileOf(auth)),
+      ...routes,
+    }),
+  );
+  final session = AppSession(
+    storage: MemoryAppStorage(),
+    serverUrl: server,
+    serverIsFixed: serverIsFixed,
+    auth: auth == null ? null : AuthSession.fromAuthResponse(auth, DateTime.now()),
+  );
+  final files = FakeFileGateway();
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appSessionProvider.overrideWithValue(session),
+        dioProvider.overrideWithValue(fakeDio(adapter)),
+        fileGatewayProvider.overrideWithValue(files),
+      ],
+      child: ArminApp(location: location),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return AppHarness(adapter, session, files);
+}
+
+/// Finds a button by its label, whatever kind of button it is.
+Finder button(String label) => find.ancestor(
+  of: find.text(label),
+  matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
+);
