@@ -16,6 +16,9 @@ import 'features/dashboard/dashboard_page.dart';
 import 'features/profile/profile_page.dart';
 import 'features/setup/setup_screen.dart';
 import 'features/shell/app_shell.dart';
+import 'features/shipments/shipment_detail_page.dart';
+import 'features/shipments/shipment_new_page.dart';
+import 'features/shipments/shipments_page.dart';
 import 'features/track/track_screen.dart';
 import 'routing.dart';
 import 'theme.dart';
@@ -46,11 +49,16 @@ class _Guarded extends ConsumerWidget {
 }
 
 /// A section of the navigation. Sections replace each other at once, like the tabs of a desktop program.
-GoRoute _section(String path, String? permission, Widget page, {List<RouteBase> routes = const <RouteBase>[]}) => GoRoute(
+GoRoute _section(
+  String path,
+  String? permission,
+  Widget Function(GoRouterState state) page, {
+  List<RouteBase> routes = const <RouteBase>[],
+}) => GoRoute(
   path: path,
   pageBuilder: (context, state) => NoTransitionPage<void>(
     key: state.pageKey,
-    child: _Guarded(permission: permission, child: page),
+    child: _Guarded(permission: permission, child: page(state)),
   ),
   routes: routes,
 );
@@ -75,8 +83,23 @@ GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
     ShellRoute(
       builder: (context, state, child) => AppShell(location: state.uri.path, child: child),
       routes: [
-        _section(AppPaths.dashboard, 'dashboard:view', const DashboardPage()),
-        _section(AppPaths.profile, null, const ProfilePage()),
+        _section(AppPaths.dashboard, 'dashboard:view', (state) => const DashboardPage()),
+        _section(
+          AppPaths.shipments,
+          'shipment:view',
+          (state) => const ShipmentsPage(),
+          // These pages lie on top of the list, which is where "back" leads. "new" has to come first:
+          // it would pass for an identifier.
+          routes: [
+            _section('new', 'shipment:create', (state) => const ShipmentNewPage()),
+            _section(':id', 'shipment:view', (state) {
+              final id = state.pathParameters['id'] ?? '';
+              // The key makes another shipment another page, not new content for the page of the last one.
+              return ShipmentDetailPage(key: ValueKey<String>(id), shipmentId: id);
+            }),
+          ],
+        ),
+        _section(AppPaths.profile, null, (state) => const ProfilePage()),
       ],
     ),
   ],

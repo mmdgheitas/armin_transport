@@ -91,9 +91,23 @@ String? localPartsToInstant(String? date, String time) {
   if (hours > 23 || minutes > 59) return null;
   final local = DateTime(year, month, day, hours, minutes);
   if (local.year != year || local.month != month || local.day != day) return null;
-  final utc = local.toUtc();
+  return _isoInstant(local);
+}
+
+/// An instant in the form the API reads: UTC, to the second.
+String _isoInstant(DateTime instant) {
+  final utc = instant.toUtc();
   return '${utc.year.toString().padLeft(4, '0')}-${_pad2(utc.month)}-${_pad2(utc.day)}'
       'T${_pad2(utc.hour)}:${_pad2(utc.minute)}:${_pad2(utc.second)}Z';
+}
+
+/// The first instant of a day ("YYYY-MM-DD") in the zone of the device: the lower bound of a "from" filter.
+String? startOfLocalDay(String? isoDate) => localPartsToInstant(isoDate, '00:00');
+
+/// The last second of a day in the zone of the device: the upper bound of an inclusive "to" filter.
+String? endOfLocalDay(String? isoDate) {
+  final start = parseInstant(startOfLocalDay(isoDate));
+  return start == null ? null : _isoInstant(start.add(const Duration(seconds: 86399)));
 }
 
 String _normalizeNumberText(String text) => toLatinDigits(text)

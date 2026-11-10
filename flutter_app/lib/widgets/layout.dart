@@ -200,5 +200,22 @@ class TrackingCodeText extends StatelessWidget {
   }
 }
 
+/// The name of a file: left to right, and never wider than its column allows however long it is.
+class FileNameText extends StatelessWidget {
+  const FileNameText(this.name, {super.key, this.maxWidth = 320, this.maxLines = 2});
+
+  final String name;
+  final double maxWidth;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: Text(name, textDirection: TextDirection.ltr, maxLines: maxLines, overflow: TextOverflow.ellipsis),
+    );
+  }
+}
+
 /// The text for a value that may be missing.
 String orDash(String? text) => text == null || text.trim().isEmpty ? emptyPlaceholder : text;

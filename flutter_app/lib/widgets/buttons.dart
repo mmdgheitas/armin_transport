@@ -46,6 +46,7 @@ class ActionButton extends StatefulWidget {
     super.key,
     required this.label,
     required this.onPressed,
+    this.confirm,
     this.icon,
     this.kind = ButtonKind.outlined,
     this.danger = false,
@@ -53,6 +54,10 @@ class ActionButton extends StatefulWidget {
 
   final String label;
   final Future<void> Function()? onPressed;
+
+  /// Asked before [onPressed] runs, typically with a dialog; the action is dropped unless it completes with `true`.
+  /// The spinner starts only afterwards: it stands for the server working, not for the user thinking.
+  final Future<bool> Function()? confirm;
   final IconData? icon;
   final ButtonKind kind;
   final bool danger;
@@ -67,6 +72,12 @@ class _ActionButtonState extends State<ActionButton> {
   Future<void> _run() async {
     final action = widget.onPressed;
     if (action == null || _busy) return;
+    final confirm = widget.confirm;
+    if (confirm != null) {
+      final confirmed = await confirm();
+      if (!confirmed) return;
+      if (!mounted) return;
+    }
     setState(() => _busy = true);
     try {
       await action();

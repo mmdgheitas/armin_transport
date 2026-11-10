@@ -93,6 +93,20 @@ void main() {
     expect(errorOf(datetime, FieldInput(dateIncomplete: true, time: '10:00')), contains('تاریخ'));
   });
 
+  test('turns the days of a date filter into the instants that bound them', () {
+    final start = startOfLocalDay('2026-11-10');
+    final end = endOfLocalDay('2026-11-10');
+    expect(start, expectedInstant(2026, 11, 10, 0, 0));
+    expect(end, matches(RegExp(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:59Z$')));
+    // The whole day lies between the two, to the second.
+    expect(DateTime.parse(end!).difference(DateTime.parse(start!)), const Duration(hours: 23, minutes: 59, seconds: 59));
+    expect(DateTime.parse(end).toLocal().day, 10);
+    expect(startOfLocalDay('2026-02-30'), isNull);
+    expect(endOfLocalDay('garbage'), isNull);
+    expect(startOfLocalDay(null), isNull);
+    expect(endOfLocalDay(null), isNull);
+  });
+
   test('converts API values to the initial control state', () {
     expect(FieldInput.fromApiValue(field('TEXT'), 'متن').text, 'متن');
     expect(FieldInput.fromApiValue(field('TEXT'), null).text, '');

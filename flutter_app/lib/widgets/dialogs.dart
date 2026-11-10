@@ -37,6 +37,12 @@ Future<bool> confirmAction(
   return confirmed ?? false;
 }
 
+/// Shows a form in a dialog. Completes with what the form passed to `Navigator.pop`, or `null` when it was cancelled.
+///
+/// A tap beside the dialog does not close it: what was typed would be lost.
+Future<T?> showFormDialog<T>(BuildContext context, WidgetBuilder builder) =>
+    showDialog<T>(context: context, barrierDismissible: false, builder: builder);
+
 /// The frame of a form in a dialog: title, fields, the message of the form, cancel and submit.
 class FormDialog extends StatelessWidget {
   const FormDialog({
@@ -65,25 +71,30 @@ class FormDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final error = this.error;
-    return AlertDialog(
-      title: Text(title),
-      scrollable: true,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      content: SizedBox(
-        width: width,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final (index, child) in children.indexed) ...[if (index > 0) const SizedBox(height: 16), child],
-            if (error != null) ...[const SizedBox(height: 16), Notice(error, tone: Tone.danger)],
-          ],
+    // While the server is working the dialog stays, also when the back button is pressed:
+    // the form closes itself with the result.
+    return PopScope(
+      canPop: !busy,
+      child: AlertDialog(
+        title: Text(title),
+        scrollable: true,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        content: SizedBox(
+          width: width,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final (index, child) in children.indexed) ...[if (index > 0) const SizedBox(height: 16), child],
+              if (error != null) ...[const SizedBox(height: 16), Notice(error, tone: Tone.danger)],
+            ],
+          ),
         ),
+        actions: [
+          TextButton(onPressed: busy ? null : () => Navigator.of(context).pop(), child: const Text('انصراف')),
+          BusyButton(label: submitLabel, icon: submitIcon, busy: busy, danger: danger, onPressed: onSubmit),
+        ],
       ),
-      actions: [
-        TextButton(onPressed: busy ? null : () => Navigator.of(context).pop(), child: const Text('انصراف')),
-        BusyButton(label: submitLabel, icon: submitIcon, busy: busy, danger: danger, onPressed: onSubmit),
-      ],
     );
   }
 }

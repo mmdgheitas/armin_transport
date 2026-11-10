@@ -103,14 +103,18 @@ class ErrorBlock extends StatelessWidget {
 }
 
 class EmptyBlock extends StatelessWidget {
-  const EmptyBlock({super.key, required this.title, this.icon = Icons.inbox_outlined, this.action});
+  const EmptyBlock({super.key, required this.title, this.text, this.icon = Icons.inbox_outlined, this.action});
 
   final String title;
+
+  /// What the user can do about it.
+  final String? text;
   final IconData icon;
   final Widget? action;
 
   @override
   Widget build(BuildContext context) {
+    final text = this.text;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
       child: Center(
@@ -120,6 +124,10 @@ class EmptyBlock extends StatelessWidget {
             Icon(icon, size: 40, color: AppColors.borderStrong),
             const SizedBox(height: 12),
             Text(title, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted)),
+            if (text != null) ...[
+              const SizedBox(height: 4),
+              Text(text, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: AppColors.muted)),
+            ],
             if (action != null) ...[const SizedBox(height: 16), action!],
           ],
         ),

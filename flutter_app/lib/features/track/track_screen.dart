@@ -345,7 +345,7 @@ class _ShipmentView extends StatelessWidget {
               emptyTitle: 'سندی برای این محموله در دسترس نیست.',
               emptyIcon: Icons.description_outlined,
               columns: [
-                TableColumn<CustomerDocument>('نام سند', (context, document) => LtrText(document.name)),
+                TableColumn<CustomerDocument>('نام سند', (context, document) => FileNameText(document.name)),
                 TableColumn<CustomerDocument>('حجم', (context, document) => Text(formatFileSize(document.fileSize))),
                 TableColumn<CustomerDocument>(
                   'تاریخ بارگذاری',

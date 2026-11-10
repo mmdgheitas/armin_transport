@@ -128,6 +128,7 @@ class PagedTable<T> extends StatefulWidget {
     required this.columns,
     required this.emptyTitle,
     this.filters,
+    this.emptyText,
     this.emptyIcon = Icons.inbox_outlined,
     this.emptyAction,
     this.onOpen,
@@ -141,6 +142,7 @@ class PagedTable<T> extends StatefulWidget {
   final Object? filters;
 
   final String emptyTitle;
+  final String? emptyText;
   final IconData emptyIcon;
   final Widget? emptyAction;
 
@@ -220,7 +222,12 @@ class PagedTableState<T> extends State<PagedTable<T>> {
     final data = _data;
     if (data == null) return const LoadingBlock();
     if (data.items.isEmpty) {
-      return EmptyBlock(title: widget.emptyTitle, icon: widget.emptyIcon, action: widget.emptyAction);
+      return EmptyBlock(
+        title: widget.emptyTitle,
+        text: widget.emptyText,
+        icon: widget.emptyIcon,
+        action: widget.emptyAction,
+      );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

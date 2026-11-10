@@ -10,6 +10,7 @@ import 'package:armin_transport/core/files.dart';
 import 'package:armin_transport/core/providers.dart';
 import 'package:armin_transport/core/session.dart';
 import 'package:armin_transport/core/storage.dart';
+import 'package:armin_transport/widgets/fields.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -80,10 +81,19 @@ class AppHarness {
 
   List<RecordedRequest> get calls => adapter.calls;
 
+  static String _nameOf(RecordedRequest call) => '${call.method} ${call.path.replaceFirst('/api/v1', '')}';
+
   /// The requests so far as "METHOD /path", without the API root.
-  List<String> get requests => [
-    for (final call in calls) '${call.method} ${call.path.replaceFirst('/api/v1', '')}',
-  ];
+  List<String> get requests => [for (final call in calls) _nameOf(call)];
+
+  /// How often [request] ("METHOD /path") has been sent.
+  int count(String request) => requests.where((name) => name == request).length;
+
+  /// The most recent [request] ("METHOD /path").
+  RecordedRequest last(String request) => calls.lastWhere(
+    (call) => _nameOf(call) == request,
+    orElse: () => throw StateError('$request was not sent. Sent: $requests'),
+  );
 }
 
 /// Starts the app and waits until the first screen has settled.
@@ -135,3 +145,58 @@ Finder button(String label) => find.ancestor(
   of: find.text(label),
   matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
 );
+
+/// Whether the button with [label] can be pressed.
+bool isEnabled(WidgetTester tester, String label) => tester.widget<ButtonStyleButton>(button(label)).enabled;
+
+/// The frame of the form field labelled [label].
+Finder fieldShell(String label) => find.byWidgetPredicate((widget) => widget is FieldShell && widget.label == label);
+
+/// The text box of the form field labelled [label].
+Finder textBox(String label) => find.descendant(of: fieldShell(label), matching: find.byType(TextField));
+
+/// What the text box of the field labelled [label] holds.
+String textIn(WidgetTester tester, String label) => tester.widget<TextField>(textBox(label)).controller?.text ?? '';
+
+/// Scrolls to [target], taps it and waits until the screen has settled.
+Future<void> tapOn(WidgetTester tester, Finder target) async {
+  // The message of the previous step floats above the lower edge of the screen and may cover the target.
+  // A user waits until it has left; the test removes it.
+  for (final messenger in tester.stateList<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))) {
+    messenger.removeCurrentSnackBar();
+  }
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+  await tester.tap(target);
+  await tester.pumpAndSettle();
+}
+
+/// Chooses [option] in the dropdown of the form field labelled [label].
+Future<void> choose(WidgetTester tester, String label, String option) async {
+  await tapOn(
+    tester,
+    find.descendant(
+      of: fieldShell(label),
+      matching: find.byWidgetPredicate((widget) => widget is DropdownButtonFormField),
+    ),
+  );
+  // The open menu lies on top of the page: its entry is the last text of that kind.
+  await tester.tap(find.text(option).last);
+  await tester.pumpAndSettle();
+}
+
+/// A file as the file chooser hands it over.
+PickedFile pickedFile(String name, List<int> bytes) =>
+    PickedFile(name: name, size: bytes.length, readBytes: () async => Uint8List.fromList(bytes));
+
+/// The answer to a download.
+ResponseBody fileResponse(List<int> bytes, {required String filename, String contentType = 'application/pdf'}) =>
+    ResponseBody.fromBytes(
+      bytes,
+      200,
+      headers: {
+        'content-type': [contentType],
+        'content-disposition': ['attachment; filename="$filename"'],
+      },
+    );
