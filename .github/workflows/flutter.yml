@@ -1,0 +1,65 @@
+# Static analysis and tests of the Flutter app (Android and Windows).
+name: Flutter app
+
+on:
+  push:
+    branches: ["arena/**"]
+    paths: ["flutter_app/**", "tools/ci/**", ".github/workflows/flutter.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+concurrency:
+  group: flutter-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.47.9"
+
+jobs:
+  check:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: flutter_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Resolve dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          set -o pipefail
+          flutter pub get 2>&1 | tee "$RUNNER_TEMP/out/pub-get.txt"
+          # The lock file is committed: a difference means it has to be updated in the repository.
+          git diff -- pubspec.lock > "$RUNNER_TEMP/out/lock-diff.txt" || true
+      - name: Analyze
+        id: analyze
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          flutter analyze --no-pub 2>&1 | tee "$RUNNER_TEMP/out/analyze.txt"
+      - name: Test
+        id: test
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          flutter test --no-pub --reporter expanded 2>&1 | tee "$RUNNER_TEMP/out/test.txt"
+      - name: Publish diagnostics
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node ../tools/ci/publish-check.mjs flutter "$RUNNER_TEMP"/out/*.txt
+      - name: Report the result
+        if: steps.analyze.outcome != 'success' || steps.test.outcome != 'success'
+        run: |
+          echo "analyze: ${{ steps.analyze.outcome }}, test: ${{ steps.test.outcome }}"
+          exit 1
