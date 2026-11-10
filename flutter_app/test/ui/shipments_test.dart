@@ -142,25 +142,49 @@ void main() {
     });
   });
 
-  testWidgets('opens a shipment from the list and comes back', (tester) async {
+  testWidgets('opens a shipment from the list; what is changed there shows in the list afterwards', (tester) async {
+    var description = 'دو پالت قطعات یدکی';
+    Json first() => shipmentJson(description: description);
+    Json second() => shipmentJson(id: 's2', code: secondCode, status: 'ARCHIVED', description: 'یک دستگاه ژنراتور');
     final app = await pumpApp(
       tester,
       auth: authPayload(),
       location: '/shipments',
       routes: {
-        'GET /shipments': (request) => ok(pageOf(twoShipments())),
-        'GET /shipments/s2': (request) => ok(shipmentJson(id: 's2', code: secondCode, status: 'ARCHIVED')),
+        'GET /shipments': (request) => ok(pageOf([first(), second()])),
+        'GET /shipments/s1': (request) => ok(first()),
+        'GET /shipments/s1/product-values': (request) => ok({'items': const <Json>[]}),
+        'PATCH /shipments/s1': (request) {
+          description = (request.json as Map)['description'] as String;
+          return ok(first(), message: 'توضیحات ذخیره شد.');
+        },
+        'GET /shipments/s2': (request) => ok(second()),
         'GET /shipments/s2/product-values': (request) => ok({'items': const <Json>[]}),
       },
     );
-    await tapOn(tester, find.text(secondCode));
+    await tapOn(tester, find.text(firstCode));
     expect(find.text('جزئیات محموله'), findsWidgets);
-    expect(app.requests, contains('GET /shipments/s2'));
-    expect(find.textContaining('این محموله بایگانی شده است'), findsOneWidget);
+    expect(app.requests, contains('GET /shipments/s1'));
+    expect(app.count('GET /shipments'), 1);
+
+    await tapOn(tester, button('ویرایش توضیحات'));
+    await tester.enterText(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextField)), 'سه پالت');
+    await tapOn(tester, button('ذخیره'));
+    // The list lies underneath, out of sight. It is told about the change and loads again.
+    expect(app.count('GET /shipments'), 2);
 
     await tapOn(tester, find.byTooltip('بازگشت به فهرست'));
     expect(find.text('محموله‌های شرکت شما'), findsOneWidget);
-    expect(find.text(firstCode), findsOneWidget);
+    expect(find.text('سه پالت'), findsOneWidget);
+    expect(find.text('دو پالت قطعات یدکی'), findsNothing);
+    expect(app.count('GET /shipments'), 2);
+
+    // Another shipment is another page, not the last one with new content.
+    await tapOn(tester, find.text(secondCode));
+    expect(find.textContaining('این محموله بایگانی شده است'), findsOneWidget);
+    expect(find.text('یک دستگاه ژنراتور'), findsOneWidget);
+    expect(find.text('سه پالت'), findsNothing);
+    expect(app.count('GET /shipments'), 2);
   });
 
   testWidgets('on a phone the list is a column of cards and the filters are folded away', (tester) async {
@@ -218,11 +242,15 @@ void main() {
         'description': 'سه کارتن لوازم',
         'product_values': {'weight': 120, 'fragile': true},
       });
-      // The new shipment is opened, and the list underneath learns about it.
+      // The new shipment is opened.
       expect(find.text('محموله ثبت شد.'), findsOneWidget);
       expect(find.text('جزئیات محموله'), findsWidgets);
       expect(app.requests, contains('GET /shipments/s9'));
-      expect(app.count('GET /shipments'), 2);
+      // The list was never on screen: it loads when the user gets there.
+      expect(app.count('GET /shipments'), 0);
+      await tapOn(tester, find.byTooltip('بازگشت به فهرست'));
+      expect(app.count('GET /shipments'), 1);
+      expect(find.text('محموله‌های شرکت شما'), findsOneWidget);
     });
 
     testWidgets('shows what the server says about single fields next to them', (tester) async {

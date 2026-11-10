@@ -138,8 +138,6 @@ void main() {
     expect(find.text('توضیحات ذخیره شد.'), findsOneWidget);
     expect(find.text('سه پالت'), findsOneWidget);
     expect(app.count('GET /shipments/s1'), 2);
-    // The list underneath shows the description as well.
-    expect(app.count('GET /shipments'), 2);
 
     // An emptied box removes the description.
     await tapOn(tester, button('ویرایش توضیحات'));

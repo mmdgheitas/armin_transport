@@ -389,7 +389,7 @@ class _CodeDialogState extends ConsumerState<_CodeDialog> with FormSupport<_Code
     final problem = manual.isEmpty ? null : trackingCodeProblem(manual, widget.rules);
     final api = ref.read(apiProvider);
     String? message;
-    final done = await runForm(problems: {if (problem != null) 'tracking_code': problem}, () async {
+    final done = await runForm(problems: {'tracking_code': ?problem}, () async {
       final changed = await api.changeTrackingCode(widget.shipment.id, manualCode: manual.isEmpty ? null : manual);
       message = changed.message;
     });
