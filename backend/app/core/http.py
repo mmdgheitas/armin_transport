@@ -30,11 +30,12 @@ def _api_headers(response: Response) -> None:
 
 
 def _web_headers(response: Response, settings: Settings) -> None:
-    connect_sources = " ".join(("'self'", *settings.cors_allowed_origins))
+    # The client served from here talks to the API of this same origin, so ``connect-src`` is 'self' and nothing
+    # else. (CORS_ALLOWED_ORIGINS is about the opposite direction: pages of other origins calling this API.)
     response.headers.setdefault(
         "Content-Security-Policy",
         "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; "
-        f"font-src 'self'; connect-src {connect_sources}; object-src 'none'; base-uri 'self'; "
+        "font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; "
         f"form-action 'self'; frame-ancestors {settings.frame_ancestors}",
     )
     if settings.frame_ancestors == "'none'":

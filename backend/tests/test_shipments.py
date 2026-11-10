@@ -279,6 +279,8 @@ def test_list_filters_and_sorting(factory: Factory, app: Flask) -> None:
     assert ids("tracking_code=bbb-۰۰۰۰۰۲") == [str(middle.id)]  # exact match after normalization
     assert ids("tracking_code=BBB") == []
     assert ids("q=bbb") == [str(middle.id)]  # partial match on the code
+    assert ids("q=۰۰۰۰۰۲") == [str(middle.id)]  # a code typed with Persian digits
+    assert ids("q=bbb+-+۰۰۰") == [str(middle.id)]  # lower case, Persian digits and stray spaces together
     assert ids("q=خودرو") == [str(middle.id)]  # partial match on the description
     assert ids("q=100%25") == [str(newest.id)]  # LIKE wildcards are literal
     assert ids(f"created_by={colleague.id}") == [str(middle.id)]

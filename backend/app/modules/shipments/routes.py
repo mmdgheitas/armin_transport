@@ -149,7 +149,7 @@ def get_product_values(actor: Actor, shipment_id: uuid.UUID) -> ApiResult:
 )
 def set_product_values(actor: Actor, shipment_id: uuid.UUID, body: dict[str, Any]) -> ApiResult:
     values = get_services().shipments.set_product_values(actor, shipment_id, body["values"])
-    return ApiResult(values, message="مشخصات محصول ذخیره شد.")
+    return ApiResult(values, message="مشخصات کالا ذخیره شد.")
 
 
 @bp.post("/shipments/<uuid:shipment_id>/customer-sessions/revoke")

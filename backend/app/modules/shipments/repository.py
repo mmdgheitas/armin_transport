@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, scoped_session
 
 from app.core.pagination import Page, escape_like, paginate
 from app.models import Document, Shipment, ShipmentStatus, TrackingCodeHistory, TrackingCodeType
+from app.modules.shipments.tracking_codes import normalize_tracking_code
 
 SORT_OPTIONS = {
     "created_at": (Shipment.created_at.asc(), Shipment.id.asc()),
@@ -78,13 +79,12 @@ class ShipmentRepository:
         if created_to is not None:
             statement = statement.where(Shipment.created_at <= created_to)
         if q:
-            pattern = f"%{escape_like(q)}%"
-            statement = statement.where(
-                or_(
-                    Shipment.tracking_code.like(pattern.upper(), escape="\\"),
-                    Shipment.description.like(pattern, escape="\\"),
-                )
-            )
+            conditions = [Shipment.description.like(f"%{escape_like(q)}%", escape="\\")]
+            # A code is matched in its stored form, however it was typed (Persian digits, lower case, spaces).
+            code = normalize_tracking_code(q)
+            if code:
+                conditions.append(Shipment.tracking_code.like(f"%{escape_like(code)}%", escape="\\"))
+            statement = statement.where(or_(*conditions))
         statement = statement.order_by(*SORT_OPTIONS.get(sort, SORT_OPTIONS[DEFAULT_SORT]))
         return paginate(self._session, statement, page, per_page)
 

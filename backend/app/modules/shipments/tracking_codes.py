@@ -8,6 +8,7 @@ import unicodedata
 
 from app.config import Settings
 from app.core.client_settings import TRACKING_CODE_MAX_LENGTH, TRACKING_CODE_PATTERN
+from app.core.text import fa_number
 
 # Crockford base32 alphabet: no I, L, O or U, so codes are unambiguous when read aloud or typed.
 AUTO_CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
@@ -44,9 +45,9 @@ def normalize_tracking_code(raw: str) -> str:
 def validate_tracking_code(code: str, min_length: int) -> str:
     """Validate an already-normalized code and return it."""
     if len(code) < min_length:
-        raise InvalidTrackingCodeError(f"کد رهگیری باید دست‌کم {min_length} نویسه باشد.")
+        raise InvalidTrackingCodeError(f"کد رهگیری باید دست‌کم {fa_number(min_length)} نویسه باشد.")
     if len(code) > TRACKING_CODE_MAX_LENGTH:
-        raise InvalidTrackingCodeError(f"کد رهگیری نباید بیشتر از {TRACKING_CODE_MAX_LENGTH} نویسه باشد.")
+        raise InvalidTrackingCodeError(f"کد رهگیری نباید بیشتر از {fa_number(TRACKING_CODE_MAX_LENGTH)} نویسه باشد.")
     if _PATTERN.fullmatch(code) is None:
         raise InvalidTrackingCodeError(
             "کد رهگیری فقط می‌تواند شامل حروف انگلیسی، رقم و خط تیره باشد و نباید با خط تیره شروع یا تمام شود."

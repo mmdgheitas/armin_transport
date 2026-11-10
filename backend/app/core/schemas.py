@@ -9,6 +9,7 @@ from marshmallow import EXCLUDE, RAISE, Schema, ValidationError, post_load
 
 from app.config import Settings
 from app.core import fields
+from app.core.text import fa_number
 
 
 class InputSchema(Schema):
@@ -42,7 +43,7 @@ class PaginationQuerySchema(QuerySchema):
         if data.get("per_page") is None:
             data["per_page"] = settings.default_page_size
         elif data["per_page"] > settings.max_page_size:
-            raise ValidationError({"per_page": [f"مقدار نباید بیشتر از {settings.max_page_size} باشد."]})
+            raise ValidationError({"per_page": [f"مقدار نباید بیشتر از {fa_number(settings.max_page_size)} باشد."]})
         return data
 
 

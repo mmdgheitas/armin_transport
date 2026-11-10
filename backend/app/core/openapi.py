@@ -30,7 +30,7 @@ _TAGS = [
     {"name": "users", "description": "مدیریت کارمندان (مدیر مرکزی)"},
     {"name": "shipments", "description": "محموله‌ها و کدهای رهگیری"},
     {"name": "documents", "description": "سندهای محموله"},
-    {"name": "product-fields", "description": "فیلدهای پویای محصول"},
+    {"name": "product-fields", "description": "فیلدهای پویای کالا"},
     {"name": "customer", "description": "درگاه مشتری (دسترسی با کد رهگیری)"},
     {"name": "audit-logs", "description": "گزارش ممیزی (مدیر مرکزی)"},
     {"name": "health", "description": "سلامت سرویس"},

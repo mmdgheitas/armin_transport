@@ -23,7 +23,7 @@ TAG = "product-fields"
 
 @bp.get("/product-fields")
 @endpoint(
-    summary="فهرست فیلدهای پویای محصول",
+    summary="فهرست فیلدهای پویای کالا",
     description="کارمندان فقط فیلدهای فعال را می‌بینند؛ مدیر مرکزی با include_inactive=true همه را می‌بیند.",
     tag=TAG,
     permissions=(Permission.PRODUCT_FIELD_VIEW,),

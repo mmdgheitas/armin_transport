@@ -24,6 +24,7 @@ from app.core.errors import (
     ValidationFailedError,
 )
 from app.core.pagination import Page
+from app.core.text import fa_number
 from app.core.transactions import unit_of_work
 from app.models import Document
 from app.modules.audit_logs.service import AuditService
@@ -201,7 +202,7 @@ class DocumentService:
         maximum = self._settings.max_files_per_upload
         if len(files) > maximum:
             raise ValidationFailedError.single(
-                "files", f"در هر درخواست حداکثر {maximum} فایل قابل بارگذاری است.", code="too_many_files"
+                "files", f"در هر درخواست حداکثر {fa_number(maximum)} فایل قابل بارگذاری است.", code="too_many_files"
             )
         visible = self._settings.document_customer_visible_default if customer_visible is None else customer_visible
 

@@ -21,6 +21,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import IO
 
+from app.core.text import fa_number
+
 MAX_FILENAME_LENGTH = 255
 CHUNK_SIZE = 1024 * 1024
 
@@ -225,7 +227,9 @@ def copy_with_limit(source: IO[bytes], destination: IO[bytes], max_bytes: int) -
         if size > max_bytes:
             limit_mb = max_bytes / (1024 * 1024)
             raise UploadRejectedError(
-                "file_too_large", f"حجم فایل بیشتر از حد مجاز ({limit_mb:g} مگابایت) است.", status_code=413
+                "file_too_large",
+                f"حجم فایل بیشتر از حد مجاز ({fa_number(f'{limit_mb:g}')} مگابایت) است.",
+                status_code=413,
             )
         digest.update(chunk)
         destination.write(chunk)

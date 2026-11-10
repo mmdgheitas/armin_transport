@@ -13,6 +13,7 @@ from datetime import UTC, date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any, Protocol
 
+from app.core.text import fa_number
 from app.models.enums import ProductFieldType
 
 MAX_TEXT_LENGTH = 2000
@@ -157,14 +158,14 @@ def _normalize_text_rules(rules: Mapping[str, Any]) -> dict[str, Any]:
         if key in rules:
             number = _as_int(rules[key], key)
             if not 0 <= number <= MAX_TEXT_LENGTH:
-                raise FieldValidationError(f"مقدار «{key}» باید بین ۰ و {MAX_TEXT_LENGTH} باشد.")
+                raise FieldValidationError(f"مقدار «{key}» باید بین ۰ و {fa_number(MAX_TEXT_LENGTH)} باشد.")
             result[key] = number
     if "min_length" in result and "max_length" in result and result["min_length"] > result["max_length"]:
         raise FieldValidationError("حداقل طول نمی‌تواند بیشتر از حداکثر طول باشد.")
     if "pattern" in rules:
         pattern = rules["pattern"]
         if not isinstance(pattern, str) or not 1 <= len(pattern) <= MAX_PATTERN_LENGTH:
-            raise FieldValidationError(f"الگو باید متنی با حداکثر {MAX_PATTERN_LENGTH} نویسه باشد.")
+            raise FieldValidationError(f"الگو باید متنی با حداکثر {fa_number(MAX_PATTERN_LENGTH)} نویسه باشد.")
         try:
             re.compile(pattern)
         except re.error as exc:
@@ -193,7 +194,7 @@ def _normalize_decimal_rules(rules: Mapping[str, Any]) -> dict[str, Any]:
     if "max_decimal_places" in rules:
         places = _as_int(rules["max_decimal_places"], "max_decimal_places")
         if not 0 <= places <= MAX_DECIMAL_PLACES:
-            raise FieldValidationError(f"تعداد رقم اعشار باید بین ۰ و {MAX_DECIMAL_PLACES} باشد.")
+            raise FieldValidationError(f"تعداد رقم اعشار باید بین ۰ و {fa_number(MAX_DECIMAL_PLACES)} باشد.")
         result["max_decimal_places"] = places
     return result
 
@@ -218,7 +219,7 @@ def _normalize_multi_select_rules(rules: Mapping[str, Any]) -> dict[str, Any]:
         if key in rules:
             number = _as_int(rules[key], key)
             if not 0 <= number <= MAX_OPTIONS:
-                raise FieldValidationError(f"مقدار «{key}» باید بین ۰ و {MAX_OPTIONS} باشد.")
+                raise FieldValidationError(f"مقدار «{key}» باید بین ۰ و {fa_number(MAX_OPTIONS)} باشد.")
             result[key] = number
     if "min_items" in result and "max_items" in result and result["min_items"] > result["max_items"]:
         raise FieldValidationError("حداقل تعداد انتخاب نمی‌تواند بیشتر از حداکثر آن باشد.")
@@ -259,7 +260,7 @@ def normalize_options(data_type: ProductFieldType, options: Any) -> list[dict[st
     if not isinstance(options, Sequence) or isinstance(options, str | bytes) or len(options) == 0:
         raise FieldValidationError("برای فیلد انتخابی دست‌کم یک گزینه لازم است.")
     if len(options) > MAX_OPTIONS:
-        raise FieldValidationError(f"تعداد گزینه‌ها نباید بیشتر از {MAX_OPTIONS} باشد.")
+        raise FieldValidationError(f"تعداد گزینه‌ها نباید بیشتر از {fa_number(MAX_OPTIONS)} باشد.")
     normalized: list[dict[str, str]] = []
     seen: set[str] = set()
     for option in options:
@@ -267,9 +268,13 @@ def normalize_options(data_type: ProductFieldType, options: Any) -> list[dict[st
             raise FieldValidationError("هر گزینه باید فقط شامل «value» و «label» باشد.")
         value, label = option.get("value"), option.get("label")
         if not isinstance(value, str) or not 1 <= len(value.strip()) <= MAX_OPTION_VALUE_LENGTH:
-            raise FieldValidationError(f"مقدار هر گزینه باید متنی با ۱ تا {MAX_OPTION_VALUE_LENGTH} نویسه باشد.")
+            raise FieldValidationError(
+                f"مقدار هر گزینه باید متنی با ۱ تا {fa_number(MAX_OPTION_VALUE_LENGTH)} نویسه باشد."
+            )
         if not isinstance(label, str) or not 1 <= len(label.strip()) <= MAX_OPTION_LABEL_LENGTH:
-            raise FieldValidationError(f"برچسب هر گزینه باید متنی با ۱ تا {MAX_OPTION_LABEL_LENGTH} نویسه باشد.")
+            raise FieldValidationError(
+                f"برچسب هر گزینه باید متنی با ۱ تا {fa_number(MAX_OPTION_LABEL_LENGTH)} نویسه باشد."
+            )
         value = value.strip()
         if value in seen:
             raise FieldValidationError(f"مقدار گزینهٔ «{value}» تکراری است.")
@@ -290,9 +295,9 @@ def _validate_text(value: Any, rules: Mapping[str, Any]) -> str:
     text = value.strip()
     max_length = min(int(rules.get("max_length", MAX_TEXT_LENGTH)), MAX_TEXT_LENGTH)
     if len(text) > max_length:
-        raise FieldValidationError(f"طول متن نباید بیشتر از {max_length} نویسه باشد.")
+        raise FieldValidationError(f"طول متن نباید بیشتر از {fa_number(max_length)} نویسه باشد.")
     if len(text) < int(rules.get("min_length", 0)):
-        raise FieldValidationError(f"طول متن باید دست‌کم {rules['min_length']} نویسه باشد.")
+        raise FieldValidationError(f"طول متن باید دست‌کم {fa_number(rules['min_length'])} نویسه باشد.")
     pattern = rules.get("pattern")
     if pattern and re.fullmatch(pattern, text) is None:
         raise FieldValidationError("مقدار با الگوی تعریف‌شده برای این فیلد مطابقت ندارد.")
@@ -307,9 +312,9 @@ def _validate_number(value: Any, rules: Mapping[str, Any]) -> int:
     if abs(value) > MAX_SAFE_INTEGER:
         raise FieldValidationError("عدد واردشده بیش از حد بزرگ است.")
     if "min" in rules and value < rules["min"]:
-        raise FieldValidationError(f"مقدار باید دست‌کم {rules['min']} باشد.")
+        raise FieldValidationError(f"مقدار باید دست‌کم {fa_number(rules['min'])} باشد.")
     if "max" in rules and value > rules["max"]:
-        raise FieldValidationError(f"مقدار نباید بیشتر از {rules['max']} باشد.")
+        raise FieldValidationError(f"مقدار نباید بیشتر از {fa_number(rules['max'])} باشد.")
     return value
 
 
@@ -320,29 +325,29 @@ def _validate_decimal(value: Any, rules: Mapping[str, Any]) -> str:
     normalized_exponent = normalized.as_tuple().exponent
     actual_places = max(-normalized_exponent, 0) if isinstance(normalized_exponent, int) else 0
     if actual_places > places:
-        raise FieldValidationError(f"تعداد رقم‌های اعشار نباید بیشتر از {places} باشد.")
+        raise FieldValidationError(f"تعداد رقم‌های اعشار نباید بیشتر از {fa_number(places)} باشد.")
     if "min" in rules and number < Decimal(str(rules["min"])):
-        raise FieldValidationError(f"مقدار باید دست‌کم {rules['min']} باشد.")
+        raise FieldValidationError(f"مقدار باید دست‌کم {fa_number(rules['min'])} باشد.")
     if "max" in rules and number > Decimal(str(rules["max"])):
-        raise FieldValidationError(f"مقدار نباید بیشتر از {rules['max']} باشد.")
+        raise FieldValidationError(f"مقدار نباید بیشتر از {fa_number(rules['max'])} باشد.")
     return _format_decimal(number)
 
 
 def _validate_date(value: Any, rules: Mapping[str, Any]) -> str:
     parsed = _as_date(value)
     if "min" in rules and parsed < date.fromisoformat(rules["min"]):
-        raise FieldValidationError(f"تاریخ نباید قبل از {rules['min']} باشد.")
+        raise FieldValidationError(f"تاریخ نباید قبل از {rules['min']} (میلادی) باشد.")
     if "max" in rules and parsed > date.fromisoformat(rules["max"]):
-        raise FieldValidationError(f"تاریخ نباید بعد از {rules['max']} باشد.")
+        raise FieldValidationError(f"تاریخ نباید بعد از {rules['max']} (میلادی) باشد.")
     return parsed.isoformat()
 
 
 def _validate_datetime(value: Any, rules: Mapping[str, Any]) -> str:
     parsed = _as_datetime(value)
     if "min" in rules and parsed < _as_datetime(rules["min"]):
-        raise FieldValidationError(f"زمان نباید قبل از {rules['min']} باشد.")
+        raise FieldValidationError(f"زمان نباید قبل از {rules['min']} (میلادی، UTC) باشد.")
     if "max" in rules and parsed > _as_datetime(rules["max"]):
-        raise FieldValidationError(f"زمان نباید بعد از {rules['max']} باشد.")
+        raise FieldValidationError(f"زمان نباید بعد از {rules['max']} (میلادی، UTC) باشد.")
     return _format_datetime(parsed)
 
 
@@ -373,9 +378,9 @@ def _validate_multi_select(
     if any(item not in allowed for item in value):
         raise FieldValidationError("دست‌کم یکی از مقادیر انتخاب‌شده جزو گزینه‌های مجاز این فیلد نیست.")
     if "min_items" in rules and len(value) < rules["min_items"]:
-        raise FieldValidationError(f"دست‌کم {rules['min_items']} گزینه باید انتخاب شود.")
+        raise FieldValidationError(f"دست‌کم {fa_number(rules['min_items'])} گزینه باید انتخاب شود.")
     if "max_items" in rules and len(value) > rules["max_items"]:
-        raise FieldValidationError(f"حداکثر {rules['max_items']} گزینه قابل انتخاب است.")
+        raise FieldValidationError(f"حداکثر {fa_number(rules['max_items'])} گزینه قابل انتخاب است.")
     return list(value)
 
 

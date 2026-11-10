@@ -12,6 +12,7 @@ from typing import Any
 from marshmallow import fields, validate
 
 from app.core.datetime_utils import to_iso
+from app.core.text import fa_number
 
 _COMMON_MESSAGES = {
     "required": "این فیلد الزامی است.",
@@ -107,21 +108,21 @@ class Enum(fields.Enum[Any]):
 
 def length(min: int | None = None, max: int | None = None) -> validate.Length:
     if min is not None and max is not None:
-        message = "طول مقدار باید بین {min} و {max} نویسه باشد."
+        message = f"طول مقدار باید بین {fa_number(min)} و {fa_number(max)} نویسه باشد."
     elif min is not None:
-        message = "طول مقدار باید دست‌کم {min} نویسه باشد."
+        message = f"طول مقدار باید دست‌کم {fa_number(min)} نویسه باشد."
     else:
-        message = "طول مقدار نباید بیشتر از {max} نویسه باشد."
+        message = f"طول مقدار نباید بیشتر از {fa_number(max)} نویسه باشد."
     return validate.Length(min=min, max=max, error=message)
 
 
 def number_range(min: int | None = None, max: int | None = None) -> validate.Range:
     if min is not None and max is not None:
-        message = "مقدار باید بین {min} و {max} باشد."
+        message = f"مقدار باید بین {fa_number(min)} و {fa_number(max)} باشد."
     elif min is not None:
-        message = "مقدار باید دست‌کم {min} باشد."
+        message = f"مقدار باید دست‌کم {fa_number(min)} باشد."
     else:
-        message = "مقدار نباید بیشتر از {max} باشد."
+        message = f"مقدار نباید بیشتر از {fa_number(max)} باشد."
     return validate.Range(min=min, max=max, error=message)
 
 

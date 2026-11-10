@@ -362,11 +362,16 @@ def test_embedding_policy_is_configurable_for_the_web_client_only(
     assert "frame-ancestors 'none'" in api_response.headers["Content-Security-Policy"]
 
 
-def test_web_client_may_call_the_configured_api_origins(make_app: Callable[..., Flask], web_root: Path) -> None:
-    client = make_app(
-        serve_web_app=True, web_app_dir=web_root, cors_allowed_origins=("https://api.example.com",)
-    ).test_client()
-    assert "connect-src 'self' https://api.example.com;" in client.get("/").headers["Content-Security-Policy"]
+@pytest.mark.parametrize("origins", [("https://app.example.com",), ("*",)])
+def test_cors_origins_do_not_widen_the_policy_of_the_served_web_client(
+    make_app: Callable[..., Flask], web_root: Path, origins: tuple[str, ...]
+) -> None:
+    """CORS lets pages of other origins call this API; it must not let the page served here call other origins."""
+    client = make_app(serve_web_app=True, web_app_dir=web_root, cors_allowed_origins=origins).test_client()
+    policy = client.get("/").headers["Content-Security-Policy"]
+    assert "connect-src 'self';" in policy
+    assert "example.com" not in policy
+    assert "*" not in policy
 
 
 def test_missing_web_build_does_not_break_the_api(make_app: Callable[..., Flask], tmp_path: Path) -> None:
