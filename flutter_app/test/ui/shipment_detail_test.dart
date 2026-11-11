@@ -61,8 +61,6 @@ class ShipmentServer {
 Finder visibilityOf(String name) =>
     find.byWidgetPredicate((widget) => widget is Checkbox && widget.semanticLabel == 'نمایش $name به مشتری');
 
-Finder inDialog(Finder finder) => find.descendant(of: find.byType(AlertDialog), matching: finder);
-
 void main() {
   testWidgets('shows a shipment with its goods', (tester) async {
     final server = ShipmentServer();

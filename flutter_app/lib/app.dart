@@ -11,8 +11,11 @@ import 'package:material_ui/material_ui.dart';
 import 'core/api/api_error.dart';
 import 'core/providers.dart';
 import 'core/session.dart';
+import 'features/audit/audit_logs_page.dart';
 import 'features/auth/login_screen.dart';
+import 'features/companies/companies_page.dart';
 import 'features/dashboard/dashboard_page.dart';
+import 'features/product_fields/product_fields_page.dart';
 import 'features/profile/profile_page.dart';
 import 'features/setup/setup_screen.dart';
 import 'features/shell/app_shell.dart';
@@ -20,6 +23,7 @@ import 'features/shipments/shipment_detail_page.dart';
 import 'features/shipments/shipment_new_page.dart';
 import 'features/shipments/shipments_page.dart';
 import 'features/track/track_screen.dart';
+import 'features/users/users_page.dart';
 import 'routing.dart';
 import 'theme.dart';
 
@@ -99,6 +103,15 @@ GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
             }),
           ],
         ),
+        _section(AppPaths.companies, 'company:view', (state) => const CompaniesPage()),
+        _section(AppPaths.users, 'user:view', (state) {
+          final companyId = state.uri.queryParameters['company_id'];
+          // The location may name a company (the link from the list of companies). The key makes
+          // that a page of its own, which starts with the filter set.
+          return UsersPage(key: ValueKey<String>('users-${companyId ?? ''}'), companyId: companyId);
+        }),
+        _section(AppPaths.productFields, 'product_field:manage', (state) => const ProductFieldsPage()),
+        _section(AppPaths.auditLogs, 'audit_log:view', (state) => const AuditLogsPage()),
         _section(AppPaths.profile, null, (state) => const ProfilePage()),
       ],
     ),

@@ -52,6 +52,8 @@ Json fieldJson({
   String type = 'NUMBER',
   bool required = false,
   bool active = true,
+  bool customerVisible = true,
+  int order = 1,
   Json rules = const <String, dynamic>{},
   List<Json> options = const <Json>[],
 }) => {
@@ -61,8 +63,8 @@ Json fieldJson({
   'data_type': type,
   'is_required': required,
   'is_active': active,
-  'is_customer_visible': true,
-  'display_order': 1,
+  'is_customer_visible': customerVisible,
+  'display_order': order,
   'validation_rules': rules,
   'options': options,
   'version': 1,
@@ -98,4 +100,49 @@ Json historyJson({String id = 'h1', String? oldCode, required String newCode}) =
   'new_code': newCode,
   'changed_by': {'id': 'u1', 'full_name': 'سارا محمدی', 'username': 'armin.operator'},
   'changed_at': '2026-11-09T07:15:00Z',
+};
+
+/// An account as the list of users shows it.
+Json userJson({
+  String id = 'u1',
+  String username = 'armin.operator',
+  String fullName = 'سارا محمدی',
+  String role = 'EMPLOYEE',
+  bool active = true,
+  String? companyId = 'c1',
+  String companyName = 'ترابر شرق',
+  String? lastLogin = '2026-11-08T10:00:00Z',
+}) => {
+  'id': id,
+  'username': username,
+  'full_name': fullName,
+  'role': role,
+  'is_active': active,
+  'company_id': companyId,
+  'company': companyId == null
+      ? null
+      : {'id': companyId, 'name': companyName, 'company_code': 'SHARGH', 'is_active': true},
+  'last_login_at': lastLogin,
+  'created_at': '2026-01-05T08:00:00Z',
+};
+
+/// An entry of the audit log.
+Json auditJson({
+  String id = 'a1',
+  String action = 'SHIPMENT_CREATED',
+  String entityType = 'shipment',
+  String? entityId = 's1',
+  Json? metadata,
+  bool byUser = true,
+  String? ip = '203.0.113.7',
+}) => {
+  'id': id,
+  'action': action,
+  'entity_type': entityType,
+  'entity_id': entityId,
+  'metadata': metadata,
+  'ip_address': ip,
+  'request_id': 'req-$id',
+  'user': byUser ? {'id': 'u1', 'full_name': 'سارا محمدی', 'username': 'armin.operator'} : null,
+  'created_at': '2026-11-09T07:15:00Z',
 };

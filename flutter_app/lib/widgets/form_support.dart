@@ -28,6 +28,9 @@ mixin FormSupport<W extends StatefulWidget> on State<W> {
   /// Field names of the server that this form shows under another name.
   Map<String, String> get errorAliases => const <String, String>{};
 
+  /// The field of this form that shows what the server says about its field [name].
+  String fieldFor(String name) => errorAliases[name] ?? name;
+
   /// Runs [action] unless local validation found [problems]. Completes with `true` when the action succeeded;
   /// after a failure the messages are on screen.
   Future<bool> runForm(Future<void> Function() action, {Map<String, String> problems = const <String, String>{}}) async {
@@ -69,9 +72,11 @@ mixin FormSupport<W extends StatefulWidget> on State<W> {
     final shown = <String, String>{};
     final unmatched = <String>[];
     error.fields.forEach((name, message) {
-      final field = errorAliases[name] ?? name;
+      final field = fieldFor(name);
       if (fieldNames.contains(field)) {
-        shown[field] = message;
+        // Several fields of the server may be shown at one place, e.g. the rows of a list.
+        final earlier = shown[field];
+        shown[field] = earlier == null ? message : '$earlier $message';
       } else {
         unmatched.add(message);
       }

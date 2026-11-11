@@ -217,5 +217,29 @@ class FileNameText extends StatelessWidget {
   }
 }
 
+/// Text in a table that may be long, such as a name: a few lines of limited width,
+/// so that one long value does not push the other columns off the screen.
+class CellText extends StatelessWidget {
+  const CellText(this.text, {super.key, this.maxWidth = 240, this.maxLines = 2, this.bold = false});
+
+  final String text;
+  final double maxWidth;
+  final int maxLines;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: Text(
+        text,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+        style: bold ? const TextStyle(fontWeight: FontWeight.w700) : null,
+      ),
+    );
+  }
+}
+
 /// The text for a value that may be missing.
 String orDash(String? text) => text == null || text.trim().isEmpty ? emptyPlaceholder : text;

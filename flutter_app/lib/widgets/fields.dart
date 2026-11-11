@@ -193,6 +193,55 @@ class _PasswordFieldState extends State<PasswordField> {
   }
 }
 
+/// A yes-or-no setting: the box with its label beside it, and below them what the setting does.
+class CheckField extends StatelessWidget {
+  const CheckField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.hint,
+    this.enabled = true,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final String? hint;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final hint = this.hint;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Box and label are one control: for the pointer and for a screen reader.
+        MergeSemantics(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(radiusSmall),
+            onTap: enabled ? () => onChanged(!value) : null,
+            child: Row(
+              children: [
+                Checkbox(value: value, onChanged: enabled ? (next) => onChanged(next ?? false) : null),
+                Expanded(
+                  child: Text(label, style: TextStyle(color: enabled ? AppColors.text : AppColors.muted, height: 1.5)),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (hint != null)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 48, bottom: 4),
+            child: Text(hint, style: const TextStyle(fontSize: 12, color: AppColors.muted, height: 1.5)),
+          ),
+      ],
+    );
+  }
+}
+
 /// One of a list of choices. The first entry may stand for "nothing chosen" with the value `null`.
 class ChoiceField<T> extends StatelessWidget {
   const ChoiceField({

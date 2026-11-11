@@ -10,6 +10,7 @@ import 'package:armin_transport/core/files.dart';
 import 'package:armin_transport/core/providers.dart';
 import 'package:armin_transport/core/session.dart';
 import 'package:armin_transport/core/storage.dart';
+import 'package:armin_transport/widgets/feedback.dart';
 import 'package:armin_transport/widgets/fields.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -149,14 +150,38 @@ Finder button(String label) => find.ancestor(
 /// Whether the button with [label] can be pressed.
 bool isEnabled(WidgetTester tester, String label) => tester.widget<ButtonStyleButton>(button(label)).enabled;
 
-/// The frame of the form field labelled [label].
-Finder fieldShell(String label) => find.byWidgetPredicate((widget) => widget is FieldShell && widget.label == label);
+/// What is shown in the open dialog. The page underneath stays on screen and may hold the same texts and fields.
+Finder inDialog(Finder finder) => find.descendant(of: find.byType(AlertDialog), matching: finder);
+
+/// The frame of the form field labelled [label]; with [within], the one inside that part of the screen.
+Finder fieldShell(String label, {Finder? within}) {
+  final shell = find.byWidgetPredicate((widget) => widget is FieldShell && widget.label == label);
+  return within == null ? shell : find.descendant(of: within, matching: shell);
+}
 
 /// The text box of the form field labelled [label].
-Finder textBox(String label) => find.descendant(of: fieldShell(label), matching: find.byType(TextField));
+Finder textBox(String label, {Finder? within}) =>
+    find.descendant(of: fieldShell(label, within: within), matching: find.byType(TextField));
 
 /// What the text box of the field labelled [label] holds.
-String textIn(WidgetTester tester, String label) => tester.widget<TextField>(textBox(label)).controller?.text ?? '';
+String textIn(WidgetTester tester, String label, {Finder? within}) =>
+    tester.widget<TextField>(textBox(label, within: within)).controller?.text ?? '';
+
+/// The yes-or-no setting labelled [label].
+Finder checkField(String label) => find.byWidgetPredicate((widget) => widget is CheckField && widget.label == label);
+
+/// The box of the setting labelled [label]: what a user taps to change it.
+Finder checkBox(String label) => find.descendant(of: checkField(label), matching: find.byType(Checkbox));
+
+/// Whether the setting labelled [label] is ticked.
+bool isChecked(WidgetTester tester, String label) => tester.widget<CheckField>(checkField(label)).value;
+
+/// The badge that reads [label]. Unlike a search for the text, this never matches the entry of a dropdown.
+Finder badge(String label) => find.byWidgetPredicate((widget) => widget is StatusBadge && widget.label == label);
+
+/// The bare text boxes (those without a label of their own) whose placeholder is [placeholder].
+Finder boxesWithPlaceholder(String placeholder) =>
+    find.byWidgetPredicate((widget) => widget is TextField && widget.decoration?.hintText == placeholder);
 
 /// Scrolls to [target], taps it and waits until the screen has settled.
 Future<void> tapOn(WidgetTester tester, Finder target) async {
@@ -173,11 +198,11 @@ Future<void> tapOn(WidgetTester tester, Finder target) async {
 }
 
 /// Chooses [option] in the dropdown of the form field labelled [label].
-Future<void> choose(WidgetTester tester, String label, String option) async {
+Future<void> choose(WidgetTester tester, String label, String option, {Finder? within}) async {
   await tapOn(
     tester,
     find.descendant(
-      of: fieldShell(label),
+      of: fieldShell(label, within: within),
       matching: find.byWidgetPredicate((widget) => widget is DropdownButtonFormField),
     ),
   );

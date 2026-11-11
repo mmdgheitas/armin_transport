@@ -105,6 +105,8 @@ void main() {
     expect(AppPaths.shipment('42'), '/shipments/42');
     expect(AppPaths.shipment('a/b'), '/shipments/a%2Fb');
     expect(AppPaths.loginThen('/shipments/42'), '/login?next=%2Fshipments%2F42');
+    expect(AppPaths.usersOf('c1'), '/users?company_id=c1');
+    expect(Uri.parse(AppPaths.usersOf('a&b=c')).queryParameters, {'company_id': 'a&b=c'});
     expect(navEntries.map((entry) => entry.path).toSet().length, navEntries.length);
   });
 }

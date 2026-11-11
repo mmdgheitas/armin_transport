@@ -18,6 +18,9 @@ abstract final class AppPaths {
 
   static String shipment(String id) => '/shipments/${Uri.encodeComponent(id)}';
 
+  /// The list of users, limited to the employees of one company.
+  static String usersOf(String companyId) => Uri(path: users, queryParameters: {'company_id': companyId}).toString();
+
   /// The login screen that continues at [next] after a successful login.
   static String loginThen(String next) => Uri(path: login, queryParameters: {'next': next}).toString();
 }

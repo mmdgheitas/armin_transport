@@ -21,14 +21,15 @@ List<TableColumn<Shipment>> shipmentColumns({required bool showCompany, bool det
   TableColumn<Shipment>('کد رهگیری', (context, shipment) => TrackingCodeText(shipment.trackingCode)),
   TableColumn<Shipment>(
     'توضیحات',
-    (context, shipment) => ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: detailed ? 260 : 320),
-      child: Text(orDash(shipment.description), maxLines: 2, overflow: TextOverflow.ellipsis),
-    ),
+    (context, shipment) => CellText(orDash(shipment.description), maxWidth: detailed ? 260 : 320),
   ),
-  if (showCompany) TableColumn<Shipment>('شرکت', (context, shipment) => Text(orDash(shipment.company?.name))),
+  if (showCompany)
+    TableColumn<Shipment>('شرکت', (context, shipment) => CellText(orDash(shipment.company?.name), maxWidth: 200)),
   if (detailed) ...[
-    TableColumn<Shipment>('ثبت‌کننده', (context, shipment) => Text(orDash(shipment.createdBy?.fullName))),
+    TableColumn<Shipment>(
+      'ثبت‌کننده',
+      (context, shipment) => CellText(orDash(shipment.createdBy?.fullName), maxWidth: 180),
+    ),
     TableColumn<Shipment>('نوع کد', (context, shipment) => Text(shipment.codeTypeLabel)),
     TableColumn<Shipment>('سندها', (context, shipment) => Text(formatNumber(shipment.documentCount))),
   ],
