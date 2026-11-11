@@ -146,3 +146,37 @@ Json auditJson({
   'user': byUser ? {'id': 'u1', 'full_name': 'سارا محمدی', 'username': 'armin.operator'} : null,
   'created_at': '2026-11-09T07:15:00Z',
 };
+
+/// What the customer portal tells about a shipment.
+Json customerShipmentJson({
+  String code = 'ARMN-7K2M-9QXD-4T8B',
+  String status = 'ACTIVE',
+  String? description = 'دو پالت قطعات یدکی',
+  int documents = 2,
+  List<Json>? details,
+}) => {
+  'tracking_code': code,
+  'status': status,
+  'company_name': 'ترابر شرق',
+  'description': description,
+  'registered_at': '2026-11-09T07:15:00Z',
+  'document_count': documents,
+  'product_details':
+      details ??
+      [
+        {'label': 'وزن (کیلوگرم)', 'data_type': 'NUMBER', 'value': 1250},
+        {'label': 'نوع بسته‌بندی', 'data_type': 'SELECT', 'value': 'پالت'},
+        {'label': 'شکستنی', 'data_type': 'BOOLEAN', 'value': true},
+      ],
+  'session_expires_at': '2026-11-10T09:00:00Z',
+};
+
+/// A document as the customer portal lists it.
+Json customerDocumentJson({String id = 'd1', String name = 'waybill.pdf', int size = 204800}) => {
+  'id': id,
+  'name': name,
+  'mime_type': 'application/pdf',
+  'extension': 'pdf',
+  'file_size': size,
+  'uploaded_at': '2026-11-09T09:30:00Z',
+};
