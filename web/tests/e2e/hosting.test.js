@@ -104,7 +104,7 @@ app.scenario('an anonymous visitor lands on the Persian, right-to-left tracking 
   });
   assert.equal(document.lang, 'fa');
   assert.equal(document.dir, 'rtl');
-  assert.equal(document.title, 'رهگیری محموله | حمل‌ونقل آرمین');
+  assert.equal(document.title, 'رهگیری محموله | حمل‌ونقل ');
   assert.match(document.bodyFont, /^"?Vazirmatn/);
   assert.ok(document.loadedFonts.includes('Vazirmatn'), `the Vazirmatn web font was not loaded (loaded: ${document.loadedFonts})`);
 
@@ -112,7 +112,7 @@ app.scenario('an anonymous visitor lands on the Persian, right-to-left tracking 
   assert.deepEqual(foreign, [], 'the client must not load anything from another origin');
 
   await ui.assertLayout('tracking page');
-  assert.deepEqual(await ui.names('link'), ['حمل‌ونقل آرمین', 'ورود کارکنان']);
+  assert.deepEqual(await ui.names('link'), ['حمل‌ونقل ', 'ورود کارکنان']);
 });
 
 app.scenario('protected pages send a visitor to the login form and unknown addresses show a not-found page', async (ui) => {

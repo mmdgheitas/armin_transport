@@ -36,7 +36,7 @@ app.scenario('an employee signs in, stays signed in across reloads and signs out
   await ui.click('ورود');
   await ui.waitForHash('#/dashboard');
   await ui.waitForText('سارا محمدی، خوش آمدید');
-  await ui.waitForText('خلاصهٔ وضعیت حمل‌ونقل آرمین');
+  await ui.waitForText('خلاصهٔ وضعیت حمل‌ونقل ');
   assert.equal(ui.requests('/dashboard/summary').length, 1, 'the dashboard is loaded once after signing in');
 
   const stored = JSON.parse(await ui.localStorage(SESSION_KEY));
@@ -109,7 +109,7 @@ app.scenario('an employee sees only the pages of the employee role', async (ui) 
   assert.equal(profile['نام'], 'سارا محمدی');
   assert.equal(profile['نام کاربری'], 'armin.operator');
   assert.equal(profile['نقش'], 'کارمند');
-  assert.equal(profile['شرکت'], 'حمل‌ونقل آرمین');
+  assert.equal(profile['شرکت'], 'حمل‌ونقل ');
 });
 
 app.scenario('the administrator sees every section', async (ui) => {

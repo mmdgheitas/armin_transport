@@ -39,7 +39,7 @@ app.scenario('a customer finds a shipment by its tracking code and sees only wha
   await ui.waitForText('waybill.pdf');
 
   const details = await ui.definitions();
-  assert.equal(details['شرکت حمل‌ونقل'], 'حمل‌ونقل آرمین');
+  assert.equal(details['شرکت حمل‌ونقل'], 'حمل‌ونقل ');
   assert.equal(details['تعداد سندها'], fa(1), 'only the released document is counted');
   assert.equal(details['نام کالا'], 'پالت لوازم خانگی');
   assert.equal(details['وزن (کیلوگرم)'], '۱٬۲۵۰٫۵');

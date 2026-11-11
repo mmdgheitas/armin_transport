@@ -7,11 +7,15 @@ import 'support/app_harness.dart';
 import 'support/sample_data.dart';
 
 void main() {
-  testWidgets('asks for the address of the server on first start', (tester) async {
+  testWidgets('asks for the address of the server on first start', (
+    tester,
+  ) async {
     final app = await pumpApp(
       tester,
       server: null,
-      routes: {'GET /health': (request) => ok({'status': 'ok', 'version': '1.0.0'})},
+      routes: {
+        'GET /health': (request) => ok({'status': 'ok', 'version': '1.0.0'}),
+      },
     );
     expect(find.text('نشانی سرور'), findsWidgets);
     expect(app.requests, isEmpty);
@@ -34,67 +38,87 @@ void main() {
     expect(find.text('armin.test'), findsOneWidget);
   });
 
-  testWidgets('does not accept an address that is not an Armin server', (tester) async {
+  testWidgets('does not accept an address that is not an Armin server', (
+    tester,
+  ) async {
     final app = await pumpApp(
       tester,
       server: null,
-      routes: {'GET /health': (request) => textResponse(200, '<html>hello</html>')},
+      routes: {
+        'GET /health': (request) => textResponse(200, '<html>hello</html>'),
+      },
     );
     await tester.enterText(find.byType(TextField), 'https://other.example');
     await tester.tap(button('بررسی و ادامه'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('سرور حمل‌ونقل آرمین پاسخ نداد'), findsOneWidget);
+    expect(find.textContaining('سرور حمل‌ونقل  پاسخ نداد'), findsOneWidget);
     expect(app.session.serverUrl, isNull);
   });
 
-  testWidgets('a visitor starts at the tracking screen and can reach the login screen', (tester) async {
-    await pumpApp(tester);
-    expect(find.text('رهگیری محموله'), findsOneWidget);
-    await tester.tap(button('ورود کارکنان'));
-    await tester.pumpAndSettle();
-    expect(find.text('ورود کارکنان'), findsOneWidget);
-    expect(find.textContaining('نام کاربری'), findsWidgets);
-    expect(find.byType(TextField), findsNWidgets(2));
-  });
+  testWidgets(
+    'a visitor starts at the tracking screen and can reach the login screen',
+    (tester) async {
+      await pumpApp(tester);
+      expect(find.text('رهگیری محموله'), findsOneWidget);
+      await tester.tap(button('ورود کارکنان'));
+      await tester.pumpAndSettle();
+      expect(find.text('ورود کارکنان'), findsOneWidget);
+      expect(find.textContaining('نام کاربری'), findsWidgets);
+      expect(find.byType(TextField), findsNWidgets(2));
+    },
+  );
 
-  testWidgets('a staff location leads to the login screen and continues there after the login', (tester) async {
-    final app = await pumpApp(
-      tester,
-      location: '/profile',
-      routes: {
-        'POST /auth/login': (request) => ok(authPayload(), message: 'خوش آمدید.'),
-      },
-    );
-    expect(find.text('ورود کارکنان'), findsOneWidget);
+  testWidgets(
+    'a staff location leads to the login screen and continues there after the login',
+    (tester) async {
+      final app = await pumpApp(
+        tester,
+        location: '/profile',
+        routes: {
+          'POST /auth/login': (request) =>
+              ok(authPayload(), message: 'خوش آمدید.'),
+        },
+      );
+      expect(find.text('ورود کارکنان'), findsOneWidget);
 
-    // Nothing is sent before both fields are filled in.
-    await tester.tap(button('ورود'));
-    await tester.pumpAndSettle();
-    expect(find.text('نام کاربری را وارد کنید.'), findsOneWidget);
-    expect(find.text('رمز عبور را وارد کنید.'), findsOneWidget);
-    expect(app.requests, isEmpty);
+      // Nothing is sent before both fields are filled in.
+      await tester.tap(button('ورود'));
+      await tester.pumpAndSettle();
+      expect(find.text('نام کاربری را وارد کنید.'), findsOneWidget);
+      expect(find.text('رمز عبور را وارد کنید.'), findsOneWidget);
+      expect(app.requests, isEmpty);
 
-    await tester.enterText(find.byType(TextField).at(0), '  armin.operator ');
-    await tester.enterText(find.byType(TextField).at(1), 'correct horse battery');
-    await tester.tap(button('ورود'));
-    await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).at(0), '  armin.operator ');
+      await tester.enterText(
+        find.byType(TextField).at(1),
+        'correct horse battery',
+      );
+      await tester.tap(button('ورود'));
+      await tester.pumpAndSettle();
 
-    expect(app.requests, ['POST /auth/login']);
-    expect(app.calls.single.json, {'username': 'armin.operator', 'password': 'correct horse battery'});
-    expect(app.session.isSignedIn, isTrue);
-    expect(find.text('خوش آمدید.'), findsOneWidget);
-    // The profile page that was asked for, inside the staff frame.
-    expect(find.text('تغییر رمز عبور'), findsWidgets);
-    expect(find.text('armin.operator'), findsWidgets);
-  });
+      expect(app.requests, ['POST /auth/login']);
+      expect(app.calls.single.json, {
+        'username': 'armin.operator',
+        'password': 'correct horse battery',
+      });
+      expect(app.session.isSignedIn, isTrue);
+      expect(find.text('خوش آمدید.'), findsOneWidget);
+      // The profile page that was asked for, inside the staff frame.
+      expect(find.text('تغییر رمز عبور'), findsWidgets);
+      expect(find.text('armin.operator'), findsWidgets);
+    },
+  );
 
   testWidgets('shows why the login failed', (tester) async {
     final app = await pumpApp(
       tester,
       location: '/login',
       routes: {
-        'POST /auth/login': (request) =>
-            errorResponse(401, 'invalid_credentials', message: 'نام کاربری یا رمز عبور نادرست است.'),
+        'POST /auth/login': (request) => errorResponse(
+          401,
+          'invalid_credentials',
+          message: 'نام کاربری یا رمز عبور نادرست است.',
+        ),
       },
     );
     await tester.enterText(find.byType(TextField).at(0), 'armin.operator');
@@ -111,7 +135,10 @@ void main() {
       auth: authPayload(),
       routes: {'GET /dashboard/summary': (request) => ok(dashboardJson())},
     );
-    expect(app.requests, containsAll(<String>['GET /auth/me', 'GET /dashboard/summary']));
+    expect(
+      app.requests,
+      containsAll(<String>['GET /auth/me', 'GET /dashboard/summary']),
+    );
     expect(find.text('سارا محمدی، خوش آمدید'), findsOneWidget);
     expect(find.text('۱٬۲۸۴'), findsOneWidget);
     expect(find.text('کل محموله‌ها'), findsOneWidget);
@@ -124,43 +151,65 @@ void main() {
     expect(find.text('گزارش رویدادها'), findsNothing);
   });
 
-  testWidgets('the central administrator sees every section and the numbers of all companies', (tester) async {
-    await pumpApp(
-      tester,
-      auth: adminAuthPayload(),
-      routes: {'GET /dashboard/summary': (request) => ok(dashboardJson(global: true))},
-    );
-    expect(find.text('خلاصهٔ وضعیت همهٔ شرکت‌ها'), findsOneWidget);
-    for (final section in ['داشبورد', 'محموله‌ها', 'شرکت‌ها', 'کاربران', 'فیلدهای محموله', 'گزارش رویدادها']) {
-      expect(find.text(section), findsWidgets, reason: section);
-    }
-    expect(find.text('شرکت فعال از ۷ شرکت'), findsOneWidget);
-    expect(find.text('کارمند فعال از ۳۱ کارمند'), findsOneWidget);
-  });
-
-  testWidgets('the dashboard offers a retry when the server cannot be reached', (tester) async {
-    var attempts = 0;
-    await pumpApp(
-      tester,
-      auth: authPayload(),
-      routes: {
-        'GET /dashboard/summary': (request) {
-          attempts += 1;
-          return attempts == 1
-              ? errorResponse(503, 'service_unavailable', message: 'سرور در دسترس نیست.')
-              : ok(dashboardJson(recent: const <Json>[]));
+  testWidgets(
+    'the central administrator sees every section and the numbers of all companies',
+    (tester) async {
+      await pumpApp(
+        tester,
+        auth: adminAuthPayload(),
+        routes: {
+          'GET /dashboard/summary': (request) =>
+              ok(dashboardJson(global: true)),
         },
-      },
-    );
-    expect(find.text('سرور در دسترس نیست.'), findsOneWidget);
-    expect(find.textContaining('req-test-0001'), findsOneWidget);
-    await tester.tap(button('تلاش دوباره'));
-    await tester.pumpAndSettle();
-    expect(attempts, 2);
-    expect(find.text('هنوز محموله‌ای ثبت نشده است.'), findsOneWidget);
-  });
+      );
+      expect(find.text('خلاصهٔ وضعیت همهٔ شرکت‌ها'), findsOneWidget);
+      for (final section in [
+        'داشبورد',
+        'محموله‌ها',
+        'شرکت‌ها',
+        'کاربران',
+        'فیلدهای محموله',
+        'گزارش رویدادها',
+      ]) {
+        expect(find.text(section), findsWidgets, reason: section);
+      }
+      expect(find.text('شرکت فعال از ۷ شرکت'), findsOneWidget);
+      expect(find.text('کارمند فعال از ۳۱ کارمند'), findsOneWidget);
+    },
+  );
 
-  testWidgets('logging out revokes the session and leads to the login screen', (tester) async {
+  testWidgets(
+    'the dashboard offers a retry when the server cannot be reached',
+    (tester) async {
+      var attempts = 0;
+      await pumpApp(
+        tester,
+        auth: authPayload(),
+        routes: {
+          'GET /dashboard/summary': (request) {
+            attempts += 1;
+            return attempts == 1
+                ? errorResponse(
+                    503,
+                    'service_unavailable',
+                    message: 'سرور در دسترس نیست.',
+                  )
+                : ok(dashboardJson(recent: const <Json>[]));
+          },
+        },
+      );
+      expect(find.text('سرور در دسترس نیست.'), findsOneWidget);
+      expect(find.textContaining('req-test-0001'), findsOneWidget);
+      await tester.tap(button('تلاش دوباره'));
+      await tester.pumpAndSettle();
+      expect(attempts, 2);
+      expect(find.text('هنوز محموله‌ای ثبت نشده است.'), findsOneWidget);
+    },
+  );
+
+  testWidgets('logging out revokes the session and leads to the login screen', (
+    tester,
+  ) async {
     final app = await pumpApp(
       tester,
       auth: authPayload(),
@@ -183,7 +232,9 @@ void main() {
       tester,
       size: phoneSize,
       auth: adminAuthPayload(),
-      routes: {'GET /dashboard/summary': (request) => ok(dashboardJson(global: true))},
+      routes: {
+        'GET /dashboard/summary': (request) => ok(dashboardJson(global: true)),
+      },
     );
     expect(tester.takeException(), isNull);
     expect(find.text('شرکت‌ها'), findsNothing);
@@ -192,7 +243,9 @@ void main() {
     expect(find.text('شرکت‌ها'), findsOneWidget);
     expect(find.text('admin'), findsOneWidget);
     // Choosing a section closes the drawer.
-    await tester.tap(find.descendant(of: find.byType(Drawer), matching: find.text('داشبورد')));
+    await tester.tap(
+      find.descendant(of: find.byType(Drawer), matching: find.text('داشبورد')),
+    );
     await tester.pumpAndSettle();
     expect(find.text('شرکت‌ها'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -203,11 +256,15 @@ void main() {
     expect(find.text('صفحه یافت نشد'), findsOneWidget);
   });
 
-  testWidgets('a page without permission is replaced by a notice', (tester) async {
+  testWidgets('a page without permission is replaced by a notice', (
+    tester,
+  ) async {
     final app = await pumpApp(
       tester,
       location: '/dashboard',
-      auth: authPayload('1', const {'permissions': <String>['shipment:view']}),
+      auth: authPayload('1', const {
+        'permissions': <String>['shipment:view'],
+      }),
     );
     expect(find.text('عدم دسترسی'), findsOneWidget);
     expect(app.requests, ['GET /auth/me']);

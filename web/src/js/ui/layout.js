@@ -3,7 +3,7 @@
 import { h, icon, ltr } from '../core/dom.js';
 import { roleLabel } from './table.js';
 
-export const APP_NAME = 'حمل‌ونقل آرمین';
+export const APP_NAME = 'حمل‌ونقل ';
 
 function brand(href) {
   return h('a', { class: 'brand', href }, h('span', { class: 'brand-mark' }, icon('truck', { size: 22 })), h('span', {}, APP_NAME));

@@ -17,8 +17,17 @@ Json shipmentJson({
   'status': status,
   'description': description,
   'company_id': 'c1',
-  'company': {'id': 'c1', 'name': 'حمل‌ونقل آرمین', 'company_code': 'ARMIN', 'is_active': true},
-  'created_by': {'id': 'u1', 'full_name': 'سارا محمدی', 'username': 'armin.operator'},
+  'company': {
+    'id': 'c1',
+    'name': 'حمل‌ونقل ',
+    'company_code': 'ARMIN',
+    'is_active': true,
+  },
+  'created_by': {
+    'id': 'u1',
+    'full_name': 'سارا محمدی',
+    'username': 'armin.operator',
+  },
   'document_count': documents,
   'created_at': '2026-11-09T07:15:00Z',
   'updated_at': '2026-11-09T07:15:00Z',
@@ -26,15 +35,32 @@ Json shipmentJson({
 
 Json dashboardJson({bool global = false, List<Json>? recent}) => {
   'scope': global ? 'GLOBAL' : 'COMPANY',
-  'company': global ? null : {'id': 'c1', 'name': 'حمل‌ونقل آرمین', 'company_code': 'ARMIN', 'is_active': true},
+  'company': global
+      ? null
+      : {
+          'id': 'c1',
+          'name': 'حمل‌ونقل ',
+          'company_code': 'ARMIN',
+          'is_active': true,
+        },
   'shipments': {'total': 1284, 'active': 1200, 'archived': 84},
   'documents': 3120,
   if (global) 'companies': {'total': 7, 'active': 6},
   if (global) 'employees': {'total': 31, 'active': 28},
-  'recent_shipments': recent ?? [shipmentJson(), shipmentJson(id: 's2', code: 'ARMN-22AA-33BB-44CC', status: 'ARCHIVED')],
+  'recent_shipments':
+      recent ??
+      [
+        shipmentJson(),
+        shipmentJson(id: 's2', code: 'ARMN-22AA-33BB-44CC', status: 'ARCHIVED'),
+      ],
 };
 
-Json companyJson({String id = 'c1', String name = 'ترابر شرق', String code = 'SHARGH', bool active = true}) => {
+Json companyJson({
+  String id = 'c1',
+  String name = 'ترابر شرق',
+  String code = 'SHARGH',
+  bool active = true,
+}) => {
   'id': id,
   'name': name,
   'company_code': code,
@@ -71,7 +97,12 @@ Json fieldJson({
 };
 
 /// The value a shipment holds for a goods field.
-Json valueJson(Json field, Object? value, {Object? display, bool outdated = false}) => {
+Json valueJson(
+  Json field,
+  Object? value, {
+  Object? display,
+  bool outdated = false,
+}) => {
   'field': field,
   'value': value,
   'display_value': display ?? value,
@@ -90,15 +121,27 @@ Json documentJson({
   'extension': 'pdf',
   'file_size': size,
   'is_customer_visible': visible,
-  'uploaded_by': {'id': 'u1', 'full_name': 'سارا محمدی', 'username': 'armin.operator'},
+  'uploaded_by': {
+    'id': 'u1',
+    'full_name': 'سارا محمدی',
+    'username': 'armin.operator',
+  },
   'created_at': '2026-11-09T09:30:00Z',
 };
 
-Json historyJson({String id = 'h1', String? oldCode, required String newCode}) => {
+Json historyJson({
+  String id = 'h1',
+  String? oldCode,
+  required String newCode,
+}) => {
   'id': id,
   'old_code': oldCode,
   'new_code': newCode,
-  'changed_by': {'id': 'u1', 'full_name': 'سارا محمدی', 'username': 'armin.operator'},
+  'changed_by': {
+    'id': 'u1',
+    'full_name': 'سارا محمدی',
+    'username': 'armin.operator',
+  },
   'changed_at': '2026-11-09T07:15:00Z',
 };
 
@@ -121,7 +164,12 @@ Json userJson({
   'company_id': companyId,
   'company': companyId == null
       ? null
-      : {'id': companyId, 'name': companyName, 'company_code': 'SHARGH', 'is_active': true},
+      : {
+          'id': companyId,
+          'name': companyName,
+          'company_code': 'SHARGH',
+          'is_active': true,
+        },
   'last_login_at': lastLogin,
   'created_at': '2026-01-05T08:00:00Z',
 };
@@ -143,7 +191,9 @@ Json auditJson({
   'metadata': metadata,
   'ip_address': ip,
   'request_id': 'req-$id',
-  'user': byUser ? {'id': 'u1', 'full_name': 'سارا محمدی', 'username': 'armin.operator'} : null,
+  'user': byUser
+      ? {'id': 'u1', 'full_name': 'سارا محمدی', 'username': 'armin.operator'}
+      : null,
   'created_at': '2026-11-09T07:15:00Z',
 };
 
@@ -172,7 +222,11 @@ Json customerShipmentJson({
 };
 
 /// A document as the customer portal lists it.
-Json customerDocumentJson({String id = 'd1', String name = 'waybill.pdf', int size = 204800}) => {
+Json customerDocumentJson({
+  String id = 'd1',
+  String name = 'waybill.pdf',
+  int size = 204800,
+}) => {
   'id': id,
   'name': name,
   'mime_type': 'application/pdf',

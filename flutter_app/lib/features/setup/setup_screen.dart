@@ -32,7 +32,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   @override
   void initState() {
     super.initState();
-    _address = TextEditingController(text: ref.read(appSessionProvider).serverUrl ?? '');
+    _address = TextEditingController(
+      text: ref.read(appSessionProvider).serverUrl ?? '',
+    );
   }
 
   @override
@@ -60,7 +62,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     final app = ref.read(appSessionProvider);
     try {
       // Ask the server who it is before trusting the address.
-      final client = createApiClient(baseUrl: baseUrl, dio: ref.read(dioProvider), app: app);
+      final client = createApiClient(
+        baseUrl: baseUrl,
+        dio: ref.read(dioProvider),
+        app: app,
+      );
       await ArminApi(client).serverVersion();
     } catch (error) {
       if (!mounted) return;
@@ -68,7 +74,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         _busy = false;
         _failure = error is ApiError && error.isNetworkError
             ? 'اتصال به این نشانی برقرار نشد. نشانی و اتصال شبکه را بررسی کنید.'
-            : 'در این نشانی سرور حمل‌ونقل آرمین پاسخ نداد. نشانی را بررسی کنید.';
+            : 'در این نشانی سرور حمل‌ونقل  پاسخ نداد. نشانی را بررسی کنید.';
       });
       return;
     }
@@ -92,10 +98,13 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('نشانی سرور', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                const Text(
+                  'نشانی سرور',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 6),
                 const Text(
-                  'نشانی سامانهٔ حمل‌ونقل آرمین را وارد کنید. این نشانی را مدیر سامانه در اختیار شما می‌گذارد.',
+                  'نشانی سامانهٔ حمل‌ونقل  را وارد کنید. این نشانی را مدیر سامانه در اختیار شما می‌گذارد.',
                   style: TextStyle(color: AppColors.muted, height: 1.7),
                 ),
                 const SizedBox(height: 20),
@@ -124,14 +133,27 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 ],
                 if (current != null && app.isSignedIn) ...[
                   const SizedBox(height: 12),
-                  const Notice('با تغییر نشانی سرور از حساب کاربری خود خارج می‌شوید.'),
+                  const Notice(
+                    'با تغییر نشانی سرور از حساب کاربری خود خارج می‌شوید.',
+                  ),
                 ],
-                if (failure != null) ...[const SizedBox(height: 12), Notice(failure, tone: Tone.danger)],
+                if (failure != null) ...[
+                  const SizedBox(height: 12),
+                  Notice(failure, tone: Tone.danger),
+                ],
                 const SizedBox(height: 20),
-                BusyButton(label: 'بررسی و ادامه', icon: Icons.arrow_forward, busy: _busy, onPressed: _submit),
+                BusyButton(
+                  label: 'بررسی و ادامه',
+                  icon: Icons.arrow_forward,
+                  busy: _busy,
+                  onPressed: _submit,
+                ),
                 if (current != null) ...[
                   const SizedBox(height: 8),
-                  TextButton(onPressed: _busy ? null : () => context.go(AppPaths.home), child: const Text('انصراف')),
+                  TextButton(
+                    onPressed: _busy ? null : () => context.go(AppPaths.home),
+                    child: const Text('انصراف'),
+                  ),
                 ],
               ],
             ),

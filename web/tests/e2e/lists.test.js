@@ -15,7 +15,7 @@ const numbered = (index) => `بار آزمایشی ${String(index).padStart(2, '
 const run = (from, to) => Array.from({ length: Math.abs(from - to) + 1 }, (_, step) => numbered(from > to ? from - step : from + step));
 
 /**
- * «حمل‌ونقل آرمین» gets 49 shipments: the three of the demo data (one of them archived here), then
+ * «حمل‌ونقل » gets 49 shipments: the three of the demo data (one of them archived here), then
  * `numbered(1)` … `numbered(45)` and last, registered by the administrator, one with a code set by hand.
  */
 const app = useApp({

@@ -7,7 +7,8 @@ import 'support/app_harness.dart';
 import 'support/sample_data.dart';
 
 /// What the page itself shows. The frame around it names the user and the company as well.
-Finder onPage(Finder finder) => find.descendant(of: find.byType(ProfilePage), matching: finder);
+Finder onPage(Finder finder) =>
+    find.descendant(of: find.byType(ProfilePage), matching: finder);
 
 void main() {
   testWidgets('shows who is signed in', (tester) async {
@@ -15,12 +16,20 @@ void main() {
     expect(onPage(find.text('سارا محمدی')), findsOneWidget);
     expect(onPage(find.text('armin.operator')), findsOneWidget);
     expect(onPage(find.text('کارمند')), findsOneWidget);
-    expect(onPage(find.text('حمل‌ونقل آرمین')), findsOneWidget);
-    expect(find.text('دست‌کم ۱۰ نویسه؛ نباید شامل نام کاربری باشد.'), findsOneWidget);
-    expect(find.text('پس از تغییر رمز، نشست شما در دستگاه‌های دیگر بسته می‌شود.'), findsOneWidget);
+    expect(onPage(find.text('حمل‌ونقل ')), findsOneWidget);
+    expect(
+      find.text('دست‌کم ۱۰ نویسه؛ نباید شامل نام کاربری باشد.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('پس از تغییر رمز، نشست شما در دستگاه‌های دیگر بسته می‌شود.'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('the central administrator belongs to no company', (tester) async {
+  testWidgets('the central administrator belongs to no company', (
+    tester,
+  ) async {
     await pumpApp(tester, auth: adminAuthPayload(), location: '/profile');
     expect(onPage(find.text('مدیر سامانه')), findsOneWidget);
     expect(onPage(find.text('مدیر مرکزی')), findsOneWidget);
@@ -28,7 +37,9 @@ void main() {
     expect(onPage(find.text('شرکت')), findsNothing);
   });
 
-  testWidgets('changes the password and goes on with the new tokens', (tester) async {
+  testWidgets('changes the password and goes on with the new tokens', (
+    tester,
+  ) async {
     final app = await pumpApp(
       tester,
       auth: authPayload(),
@@ -86,7 +97,10 @@ void main() {
       'current_password': 'Ghadimi-1404',
       'new_password': 'Sefid-Rood-1405',
     });
-    expect(app.last('POST /auth/change-password').authorization, 'Bearer access-1');
+    expect(
+      app.last('POST /auth/change-password').authorization,
+      'Bearer access-1',
+    );
     expect(find.text('رمز عبور با موفقیت تغییر کرد.'), findsOneWidget);
     expect(find.text('رمز عبور فعلی نادرست است.'), findsNothing);
     expect(textIn(tester, 'رمز عبور فعلی'), isEmpty);
@@ -108,7 +122,10 @@ void main() {
     await tapOn(tester, find.byTooltip('نمایش رمز').first);
     expect(tester.widget<TextField>(box).obscureText, isFalse);
     // Only this box: the others stay hidden.
-    expect(tester.widget<TextField>(textBox('رمز عبور جدید')).obscureText, isTrue);
+    expect(
+      tester.widget<TextField>(textBox('رمز عبور جدید')).obscureText,
+      isTrue,
+    );
     await tapOn(tester, find.byTooltip('پنهان کردن رمز'));
     expect(tester.widget<TextField>(box).obscureText, isTrue);
   });

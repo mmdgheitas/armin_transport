@@ -133,7 +133,7 @@ app.scenario('switching a company off locks its employees out until it is switch
   await ui.go('#/shipments/new');
   await ui.waitForText('اطلاعات محموله');
   const offered = await ui.options('شرکت');
-  assert.ok(offered.includes('حمل‌ونقل آرمین (ARMIN)'));
+  assert.ok(offered.includes('حمل‌ونقل  (ARMIN)'));
   assert.ok(!offered.some((option) => option.includes('باربری پارس')), 'an inactive company is not offered for new shipments');
   await ui.go('#/shipments');
   await ui.waitForRow('تجهیزات پزشکی', SHIPMENT_LIST);
@@ -205,7 +205,7 @@ app.scenario('the administrator works across companies, sets tracking codes by h
   const all = await ui.table(SHIPMENT_LIST);
   assert.ok(all.headers.includes('شرکت'));
   const companyColumn = all.headers.indexOf('شرکت');
-  assert.deepEqual([...new Set(all.rows.map((row) => row[companyColumn]))].sort(), ['باربری پارس', 'حمل‌ونقل آرمین']);
+  assert.deepEqual([...new Set(all.rows.map((row) => row[companyColumn]))].sort(), ['باربری پارس', 'حمل‌ونقل ']);
   await ui.assertLayout('shipments');
 
   await ui.select('شرکت', 'باربری پارس (PARS)');
@@ -221,7 +221,7 @@ app.scenario('the administrator works across companies, sets tracking codes by h
   // A code typed by hand: checked in the browser, normalised, unique.
   await ui.click('ثبت محمولهٔ جدید', { role: 'link' });
   assert.equal(await ui.hash(), '#/shipments/new');
-  await ui.select('شرکت', 'حمل‌ونقل آرمین (ARMIN)');
+  await ui.select('شرکت', 'حمل‌ونقل  (ARMIN)');
   await ui.fill('نام کالا', 'بار امانی');
   await ui.choose('ورود دستی');
   await ui.click('ثبت محموله');

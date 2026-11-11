@@ -276,7 +276,7 @@ def web_root(tmp_path: Path) -> Path:
     root = tmp_path / "dist"
     (root / "assets").mkdir(parents=True)
     (root / "index.html").write_text(
-        "<!doctype html><html lang='fa' dir='rtl'><title>آرمین</title></html>", encoding="utf-8"
+        "<!doctype html><html lang='fa' dir='rtl'><title></title></html>", encoding="utf-8"
     )
     (root / "assets" / "app.js").write_text("export const ready = true;\n", encoding="utf-8")
     (root / "assets" / "app.css").write_text("body { direction: rtl; }\n", encoding="utf-8")
@@ -292,7 +292,7 @@ def test_web_client_is_served_with_a_strict_content_security_policy(
     index = client.get("/")
     assert index.status_code == 200
     assert index.mimetype == "text/html"
-    assert "آرمین" in index.get_data(as_text=True)
+    assert "" in index.get_data(as_text=True)
     assert index.headers["Cache-Control"] == "no-cache"
     assert index.headers["X-Content-Type-Options"] == "nosniff"
     assert index.headers["X-Frame-Options"] == "DENY"
