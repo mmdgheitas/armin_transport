@@ -13,6 +13,7 @@ import '../../core/product_fields.dart';
 import '../../core/providers.dart';
 import '../../routing.dart';
 import '../../theme.dart';
+import '../../widgets/dialogs.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/fields.dart';
 import '../../widgets/form_layout.dart';
@@ -220,52 +221,9 @@ class _EntryDialog extends StatelessWidget {
     } else {
       userText = username == null ? user.fullName : '${user.fullName} (${ltrIsolate(username)})';
     }
-    return AlertDialog(
-      title: Text(auditActionLabel(entry.action)),
-      scrollable: true,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      // The fixed width also keeps the dialog from asking its content how wide it would like to be.
-      content: SizedBox(
-        width: 560,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            KeyValueList([
-              ('زمان', formatDateTime(entry.createdAt, long: true)),
-              ('کاربر', userText),
-              ('رویداد', LtrText(entry.action)),
-              ('موجودیت', auditEntityLabel(entry.entityType)),
-              ('شناسهٔ موجودیت', entityId == null ? null : _CopyableText(entityId)),
-              ('نشانی IP', address == null ? null : _CopyableText(address)),
-              ('شناسهٔ درخواست', requestId == null ? null : _CopyableText(requestId)),
-            ]),
-            if (metadata is Map && metadata.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              const Text('جزئیات', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceAlt,
-                  borderRadius: BorderRadius.circular(radiusSmall),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: SelectableText(
-                  const JsonEncoder.withIndent('  ').convert(metadata),
-                  textDirection: TextDirection.ltr,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontFamilyFallback: ['Consolas', 'Courier New'],
-                    fontSize: 12.5,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return DialogFrame(
+      title: auditActionLabel(entry.action),
+      width: 560,
       actions: [
         if (opensShipment)
           OutlinedButton.icon(
@@ -275,6 +233,44 @@ class _EntryDialog extends StatelessWidget {
           ),
         FilledButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('بستن')),
       ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          KeyValueList([
+            ('زمان', formatDateTime(entry.createdAt, long: true)),
+            ('کاربر', userText),
+            ('رویداد', LtrText(entry.action)),
+            ('موجودیت', auditEntityLabel(entry.entityType)),
+            ('شناسهٔ موجودیت', entityId == null ? null : _CopyableText(entityId)),
+            ('نشانی IP', address == null ? null : _CopyableText(address)),
+            ('شناسهٔ درخواست', requestId == null ? null : _CopyableText(requestId)),
+          ]),
+          if (metadata is Map && metadata.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text('جزئیات', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceAlt,
+                borderRadius: BorderRadius.circular(radiusSmall),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: SelectableText(
+                const JsonEncoder.withIndent('  ').convert(metadata),
+                textDirection: TextDirection.ltr,
+                style: const TextStyle(
+                  fontFamily: 'monospace',
+                  fontFamilyFallback: ['Consolas', 'Courier New'],
+                  fontSize: 12.5,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

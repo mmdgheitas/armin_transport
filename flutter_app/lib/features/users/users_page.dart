@@ -351,15 +351,13 @@ class _UserDialogState extends ConsumerState<_UserDialog> with FormSupport<_User
 
   /// The dialog while there is nothing to fill in: the companies are on their way, or there are none.
   Widget _waiting(String title, Widget content, {List<Widget> actions = const <Widget>[]}) {
-    return AlertDialog(
-      title: Text(title),
-      scrollable: true,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      content: SizedBox(width: 480, child: content),
+    return DialogFrame(
+      title: title,
       actions: [
         TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('انصراف')),
         ...actions,
       ],
+      child: content,
     );
   }
 

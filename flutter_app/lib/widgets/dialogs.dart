@@ -37,6 +37,34 @@ Future<bool> confirmAction(
   return confirmed ?? false;
 }
 
+/// The frame of a dialog that holds more than a sentence: the title stays in place, the content scrolls
+/// when the screen is too short for it, and the buttons stay below.
+///
+/// The content has a fixed width and scrolls on its own, instead of `AlertDialog.scrollable`. To find its
+/// width, a dialog of that kind asks its content how high it would like to be, and a widget that arranges
+/// itself by the room it gets (a [LayoutBuilder], as in the form grid) has no answer to that question.
+/// Here the dialog learns the width from the box around the content and never asks further down.
+class DialogFrame extends StatelessWidget {
+  const DialogFrame({super.key, required this.title, required this.child, required this.actions, this.width = 480});
+
+  final String title;
+  final Widget child;
+  final List<Widget> actions;
+
+  /// The width of the content on a screen that is wide enough for it.
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(title),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      content: SizedBox(width: width, child: SingleChildScrollView(child: child)),
+      actions: actions,
+    );
+  }
+}
+
 /// Shows a form in a dialog. Completes with what the form passed to `Navigator.pop`, or `null` when it was cancelled.
 ///
 /// A tap beside the dialog does not close it: what was typed would be lost.
@@ -75,25 +103,21 @@ class FormDialog extends StatelessWidget {
     // the form closes itself with the result.
     return PopScope(
       canPop: !busy,
-      child: AlertDialog(
-        title: Text(title),
-        scrollable: true,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        content: SizedBox(
-          width: width,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final (index, child) in children.indexed) ...[if (index > 0) const SizedBox(height: 16), child],
-              if (error != null) ...[const SizedBox(height: 16), Notice(error, tone: Tone.danger)],
-            ],
-          ),
-        ),
+      child: DialogFrame(
+        title: title,
+        width: width,
         actions: [
           TextButton(onPressed: busy ? null : () => Navigator.of(context).pop(), child: const Text('انصراف')),
           BusyButton(label: submitLabel, icon: submitIcon, busy: busy, danger: danger, onPressed: onSubmit),
         ],
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final (index, child) in children.indexed) ...[if (index > 0) const SizedBox(height: 16), child],
+            if (error != null) ...[const SizedBox(height: 16), Notice(error, tone: Tone.danger)],
+          ],
+        ),
       ),
     );
   }
