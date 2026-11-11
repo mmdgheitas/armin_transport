@@ -1,0 +1,13 @@
+# The key that signs the release build of the Android app.
+#
+# 1. Create a keystore once and keep it (and its passwords) safe; without it the app cannot be updated:
+#      keytool -genkey -v -keystore upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 \
+#              -validity 10000 -alias upload
+# 2. Copy this file to android/key.properties and fill it in. Neither file with real values
+#    nor the keystore belongs in the repository (.gitignore keeps them out).
+#
+# storeFile is relative to the android directory.
+storeFile=upload-keystore.jks
+storePassword=
+keyAlias=upload
+keyPassword=
