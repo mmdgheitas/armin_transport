@@ -2,15 +2,17 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { ApiError, createApiClient, filenameFromContentDisposition, isAbortError } from '../../src/js/core/api.js';
-import { createMemoryStorage, createSessionStore } from '../../src/js/core/session.js';
-import { authSession, clock, fail, fakeFetch, fakeLocks, jsonResponse, ok } from './helpers.js';
+import { SESSION_STORAGE_KEY, createMemoryStorage, createSessionStore } from '../../src/js/core/session.js';
+import { authSession, clock, fail, fakeFetch, fakeLocks, jsonResponse, laggingStorage, manualDelay, ok, settle } from './helpers.js';
 
-function setup(handler, { loggedIn = true, locks = null, storage = createMemoryStorage(), now = clock() } = {}) {
+const noDelay = () => Promise.resolve();
+
+function setup(handler, { loggedIn = true, locks = null, storage = createMemoryStorage(), now = clock(), delay = noDelay } = {}) {
   const session = createSessionStore({ storage, now });
   if (loggedIn && session.read() === null) session.setFromAuthResponse(authSession('1'));
   const { fetchImpl, calls } = fakeFetch(handler);
   const ended = [];
-  const api = createApiClient({ baseUrl: '/api/v1/', session, fetchImpl, locks, now, onSessionEnded: (error) => ended.push(error) });
+  const api = createApiClient({ baseUrl: '/api/v1/', session, fetchImpl, locks, now, delay, onSessionEnded: (error) => ended.push(error) });
   return { api, session, calls, ended, now, storage };
 }
 
@@ -163,14 +165,27 @@ test('a second refresh happens when the renewed token expires again later', asyn
   assert.equal(calls.at(-1).headers.Authorization, 'Bearer access-3');
 });
 
-test('tabs coordinate through Web Locks: the second tab reuses the first renewal', async () => {
+/** Two tabs of one browser: they share the storage and the lock, and each has its own client. */
+function twoTabs(handler, { delayA = noDelay, delayB = noDelay, lagging = false } = {}) {
   const storage = createMemoryStorage();
   const now = clock();
   const locks = fakeLocks();
-  let refreshCalls = 0;
+  const tabA = setup(handler, { storage, now, locks, delay: delayA });
+  // With `lagging`, the second tab sees what the first one stores only after `arrive()`.
+  const view = lagging ? laggingStorage(storage, [SESSION_STORAGE_KEY]) : storage;
+  const tabB = setup(handler, { storage: view, now, locks, delay: delayB });
+  const arrive = () => {
+    view.sync();
+    tabB.session.handleStorageEvent({ key: SESSION_STORAGE_KEY });
+  };
+  return { tabA, tabB, locks, now, arrive };
+}
+
+const refreshes = (tab) => tab.calls.filter((call) => call.path.endsWith('/auth/refresh'));
+
+test('tabs take turns: the second tab uses what the first one renewed', async () => {
   const handler = async (request) => {
     if (request.path.endsWith('/auth/refresh')) {
-      refreshCalls += 1;
       // A rotated token must never be presented twice: the server would revoke the whole session.
       assert.equal(request.body.refresh_token, 'refresh-token-1-padding-padding');
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -178,14 +193,127 @@ test('tabs coordinate through Web Locks: the second tab reuses the first renewal
     }
     return ok({ token: request.headers.Authorization });
   };
-  const tabA = setup(handler, { storage, now, locks });
-  const tabB = setup(handler, { storage, now, locks });
+  const { tabA, tabB, locks, now } = twoTabs(handler);
   now.advance(900_000);
   const [a, b] = await Promise.all([tabA.api.get('/x'), tabB.api.get('/y')]);
-  assert.equal(refreshCalls, 1);
-  assert.equal(locks.requests, 2);
+  assert.equal(refreshes(tabA).length + refreshes(tabB).length, 1);
   assert.equal(a.data.token, 'Bearer access-2');
   assert.equal(b.data.token, 'Bearer access-2');
+  await settle();
+  assert.equal(locks.held, false);
+});
+
+test('the tab that renewed keeps the lock until the other tabs have received the new session', async () => {
+  const delay = manualDelay();
+  const handler = (request) => (request.path.endsWith('/auth/refresh') ? ok(authSession('2')) : ok({ token: request.headers.Authorization }));
+  const { tabA, locks, now } = twoTabs(handler, { delayA: delay });
+  now.advance(900_000);
+
+  // The requests of the tab itself do not wait for that.
+  const result = await tabA.api.get('/x');
+  assert.equal(result.data.token, 'Bearer access-2');
+  assert.equal(locks.held, true);
+  assert.deepEqual(delay.pending, [150]);
+
+  delay.release();
+  await settle();
+  assert.equal(locks.held, false);
+});
+
+test('a tab that only used the renewal of another tab gives the lock back at once', async () => {
+  const delay = manualDelay();
+  const handler = (request) => (request.path.endsWith('/auth/refresh') ? ok(authSession('2')) : ok({ token: request.headers.Authorization }));
+  const { tabA, tabB, locks, now } = twoTabs(handler, { delayB: delay });
+  now.advance(900_000);
+  const [, b] = await Promise.all([tabA.api.get('/x'), tabB.api.get('/y')]);
+  assert.equal(b.data.token, 'Bearer access-2');
+  await settle();
+  assert.equal(refreshes(tabB).length, 0);
+  assert.deepEqual(delay.pending, []);
+  assert.equal(locks.held, false);
+});
+
+test('a tab that waited for the lock waits for the renewed session instead of spending the old token again', async () => {
+  const delay = manualDelay();
+  const handler = (request) => {
+    if (request.path.endsWith('/auth/refresh')) {
+      assert.equal(request.body.refresh_token, 'refresh-token-1-padding-padding');
+      return ok(authSession('2'));
+    }
+    return ok({ token: request.headers.Authorization });
+  };
+  const { tabA, tabB, locks, now, arrive } = twoTabs(handler, { delayB: delay, lagging: true });
+  now.advance(900_000);
+
+  const first = tabA.api.get('/x');
+  const second = tabB.api.get('/y');
+  assert.equal((await first).data.token, 'Bearer access-2');
+  await settle();
+
+  // The second tab holds the lock now, but what the first one stored has not reached it yet.
+  assert.equal(locks.held, true);
+  assert.equal(tabB.session.read().refreshToken, 'refresh-token-1-padding-padding');
+  assert.equal(tabB.calls.length, 0);
+  assert.deepEqual(delay.pending, [1000]);
+
+  arrive();
+  assert.equal((await second).data.token, 'Bearer access-2');
+  assert.equal(refreshes(tabA).length + refreshes(tabB).length, 1);
+  await settle();
+  assert.equal(locks.held, false);
+});
+
+test('a tab that waited in vain renews the session itself', async () => {
+  const delay = manualDelay();
+  let attempts = 0;
+  const handler = (request) => {
+    if (request.path.endsWith('/auth/refresh')) {
+      attempts += 1;
+      assert.equal(request.body.refresh_token, 'refresh-token-1-padding-padding');
+      return attempts === 1 ? fail(503, 'service_unavailable', 'سرویس در دسترس نیست.') : ok(authSession('2'));
+    }
+    return ok({ token: request.headers.Authorization });
+  };
+  const { tabA, tabB, now } = twoTabs(handler, { delayB: delay });
+  now.advance(900_000);
+
+  const first = tabA.api.get('/x');
+  const second = tabB.api.get('/y');
+  await assert.rejects(first, (error) => error.status === 503);
+  await settle();
+  assert.equal(refreshes(tabB).length, 0);
+  assert.deepEqual(delay.pending, [1000]);
+
+  delay.release();
+  assert.equal((await second).data.token, 'Bearer access-2');
+  assert.equal(attempts, 2);
+  assert.notEqual(tabA.session.read(), null);
+});
+
+test('a tab that waited does not try to renew a session that another tab ended', async () => {
+  const handler = (request) =>
+    request.path.endsWith('/auth/refresh') ? fail(401, 'refresh_token_invalid', 'نشست معتبر نیست.') : ok({ token: request.headers.Authorization });
+  const { tabA, tabB, now } = twoTabs(handler);
+  now.advance(900_000);
+  const [a, b] = await Promise.allSettled([tabA.api.get('/x'), tabB.api.get('/y')]);
+  assert.equal(a.reason.code, 'refresh_token_invalid');
+  assert.equal(b.reason.code, 'authentication_required');
+  assert.equal(b.reason.status, 401);
+  assert.equal(refreshes(tabA).length + refreshes(tabB).length, 1);
+  assert.equal(tabB.session.read(), null);
+  assert.equal(tabB.ended.length, 1);
+});
+
+test('a failing lock does not leave requests waiting for ever', async () => {
+  const locks = {
+    request() {
+      return Promise.reject(new Error('the lock manager is gone'));
+    },
+  };
+  const { api, now, session } = setup((request) => (request.path.endsWith('/auth/refresh') ? ok(authSession('2')) : ok({})), { locks });
+  now.advance(900_000);
+  await assert.rejects(api.get('/x'), /lock manager/);
+  assert.notEqual(session.read(), null);
 });
 
 test('ends the session when the refresh token is rejected', async () => {

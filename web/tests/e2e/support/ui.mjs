@@ -21,6 +21,10 @@ import { launchBrowser, SCREENSHOT_DIR } from './browser.mjs';
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 const POLL_MS = 40;
+/** No transition of the application takes this long; a picture is not held up for longer. */
+const ANIMATION_LIMIT_MS = 2_000;
+/** A picture of a failed scenario helps, but the report of the failure must not wait for it for ever. */
+const FAILURE_SCREENSHOT_LIMIT_MS = 15_000;
 export const DESKTOP = { width: 1366, height: 900 };
 export const PHONE = { width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 2 };
 
@@ -242,13 +246,23 @@ const IGNORED_CONSOLE = [
 
 class Ui {
   #tracker;
+  #tabs;
 
-  constructor({ page, baseUrl, downloadDir, tracker, openTab }) {
+  constructor({ page, baseUrl, downloadDir, tracker, openTab, tabs }) {
     this.page = page;
     this.baseUrl = baseUrl;
     this.downloadDir = downloadDir;
     this.#tracker = tracker;
+    this.#tabs = tabs;
     this.openTab = openTab;
+  }
+
+  /**
+   * A tab in the background gets no frames: animations stand still there and clicks may not arrive.
+   * So the tab that is worked with is brought to the front when the scenario has several.
+   */
+  async #toFront() {
+    if (this.#tabs.length > 1) await this.page.bringToFront();
   }
 
   // ---------------------------------------------------------------- navigation
@@ -301,6 +315,7 @@ class Ui {
   // ---------------------------------------------------------------- finding
   async #locate(role, name, options = {}) {
     const { timeout = DEFAULT_TIMEOUT_MS, ...query } = options;
+    await this.#toFront();
     return eventually(
       async () => {
         const handle = await this.page.evaluateHandle((r, n, q) => window.__e2e.one(r, n, q), role, name, query);
@@ -608,14 +623,20 @@ class Ui {
   /** Saves a picture of the viewport once transitions (a drawer sliding in, a toast appearing) have run to their end. */
   async screenshot(name) {
     const file = path.join(SCREENSHOT_DIR, `${name}.png`);
-    await this.page.evaluate(() =>
-      Promise.all(
-        document
-          .getAnimations()
-          // A spinner turns for ever; only animations that end are waited for.
-          .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
-          .map((animation) => animation.finished.catch(() => {})),
-      ),
+    await this.page.bringToFront();
+    await this.page.evaluate(
+      (limit) =>
+        Promise.race([
+          Promise.all(
+            document
+              .getAnimations()
+              // A spinner turns for ever; only animations that end are waited for.
+              .filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime))
+              .map((animation) => animation.finished.catch(() => {})),
+          ),
+          new Promise((resolve) => setTimeout(resolve, limit)),
+        ]),
+      ANIMATION_LIMIT_MS,
     );
     await this.page.screenshot({ path: file });
     return file;
@@ -723,7 +744,7 @@ export function useApp({ settings = {}, prepare = null } = {}) {
       await page.evaluateOnNewDocument(installPageHelpers);
       const tracker = { problems: [], responses: [], requests: [], expected: [] };
       watch(page, tracker);
-      const ui = new Ui({ page, baseUrl: origin === null ? backend.baseUrl : origin(), downloadDir, tracker, openTab });
+      const ui = new Ui({ page, baseUrl: origin === null ? backend.baseUrl : origin(), downloadDir, tracker, openTab, tabs });
       tabs.push(ui);
       return ui;
     };
@@ -734,7 +755,8 @@ export function useApp({ settings = {}, prepare = null } = {}) {
       for (const tab of tabs) tab.assertClean();
     } catch (error) {
       for (const [index, tab] of tabs.entries()) {
-        await tab.screenshot(`failed-${slug(name)}${index > 0 ? `-tab${index + 1}` : ''}`).catch(() => {});
+        const picture = tab.screenshot(`failed-${slug(name)}${index > 0 ? `-tab${index + 1}` : ''}`).catch(() => {});
+        await Promise.race([picture, sleep(FAILURE_SCREENSHOT_LIMIT_MS)]);
         const problems = tab.problems();
         if (problems.length > 0) console.error(`Problems reported by tab ${index + 1}:\n  ${problems.join('\n  ')}`);
       }

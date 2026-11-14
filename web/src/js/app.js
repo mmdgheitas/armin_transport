@@ -3,6 +3,7 @@
 import { config } from './config.js';
 import { createApiClient, isAbortError } from './core/api.js';
 import { h, mount } from './core/dom.js';
+import { createStorageLocks } from './core/locks.js';
 import { buildHash, createRouteTable, parseHash, resolveAccess } from './core/router.js';
 import { createMemoryStorage, createSessionStore } from './core/session.js';
 import { NAV_ITEMS, ROUTES } from './routes.js';
@@ -21,7 +22,8 @@ function browserStorage() {
 }
 
 export function startApp(root) {
-  const session = createSessionStore({ storage: browserStorage() });
+  const storage = browserStorage();
+  const session = createSessionStore({ storage });
   const table = createRouteTable(ROUTES);
   let shell = null;
   let pageAbort = null;
@@ -32,7 +34,8 @@ export function startApp(root) {
     baseUrl: config.apiBaseUrl,
     session,
     fetchImpl: (url, init) => window.fetch(url, init),
-    locks: navigator.locks ?? null,
+    // Web Locks exist only in a secure context; over plain HTTP the tabs coordinate through the storage.
+    locks: navigator.locks ?? createStorageLocks({ storage }),
     onSessionEnded(error) {
       const now = Date.now();
       if (now - lastSessionEndedToast > 3000) toast.error(errorMessage(error));

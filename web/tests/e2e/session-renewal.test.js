@@ -60,15 +60,21 @@ app.scenario('a token that is about to expire is renewed once before the next re
   assert.equal(await ui.localStorage(SESSION_KEY), null);
 });
 
-app.scenario('two tabs that notice the expiry at the same moment renew the session only once', async (first) => {
+/**
+ * Two tabs find the access token expired at the same moment. The renewal is slowed down, so that the
+ * second tab certainly asks while the first one is still waiting for the answer of the server.
+ * `prepareTab(tab)` runs for each tab before it loads the application.
+ */
+async function twoTabsRenewOnce(first, prepareTab = async () => {}) {
+  await prepareTab(first);
   await first.open('#/login');
   await signIn(first, 'armin.operator', app.password);
   const second = await first.openTab();
+  await prepareTab(second);
   await second.open('#/dashboard');
   await second.waitForText('سارا محمدی، خوش آمدید');
   const before = await readSession(first);
 
-  // Slow the renewal down so that the second tab certainly asks while the first is still waiting.
   await first.delayRequests('/auth/refresh', 400);
   await second.delayRequests('/auth/refresh', 400);
   await pretendAccessTokenExpiresAt(first, Date.now() - 1000);
@@ -81,12 +87,31 @@ app.scenario('two tabs that notice the expiry at the same moment renew the sessi
   const after = await readSession(second);
   assert.notEqual(after.refreshToken, before.refreshToken);
   assert.deepEqual(await readSession(first), after, 'both tabs use the same renewed session');
+  return second;
+}
+
+app.scenario('two tabs that notice the expiry at the same moment renew the session only once', async (first) => {
+  const second = await twoTabsRenewOnce(first);
+  assert.equal(await first.page.evaluate(() => typeof navigator.locks?.request), 'function', 'this browser coordinates the tabs with Web Locks');
 
   // The tabs share one session: signing out in one of them signs the other one out as well.
   await first.click('خروج');
   await first.waitForHash('#/login');
   await second.waitForHash('#/login?next=%23%2Fshipments');
   assert.ok(!(await second.hasText('مواد غذایی')));
+});
+
+app.scenario('two tabs renew the session only once also where the browser offers no Web Locks', async (first) => {
+  // Over plain HTTP on a local network `navigator.locks` does not exist; the tabs then coordinate through the storage.
+  const withoutWebLocks = (tab) =>
+    tab.page.evaluateOnNewDocument(() => {
+      Object.defineProperty(Navigator.prototype, 'locks', { get: () => undefined, configurable: true });
+    });
+  const second = await twoTabsRenewOnce(first, withoutWebLocks);
+  for (const tab of [first, second]) {
+    assert.equal(await tab.page.evaluate(() => navigator.locks), undefined);
+    assert.equal(await tab.localStorage('armin-transport.auth.refresh.lease'), null, 'the lease is given back after the renewal');
+  }
 });
 
 app.scenario('when the server reports the token as expired, the request is repeated with a renewed token', async (ui) => {

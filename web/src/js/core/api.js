@@ -4,13 +4,21 @@
  * - Understands the response envelope `{ success, message, data, errors }`.
  * - Attaches the access token and transparently renews it. Refresh tokens rotate
  *   and reuse revokes the whole session, so renewal is single-flight: one request
- *   per tab (shared promise) and one per browser (Web Locks) at any time.
+ *   per tab (shared promise) and one per browser (a lock shared by all tabs) at any time.
  * - Reports every failure as an `ApiError` with a Persian, user-presentable message.
  */
 
 /** Renew the access token this long before it expires, so requests are not sent with a dying token. */
 const EXPIRY_SKEW_MS = 20_000;
 const REFRESH_LOCK_NAME = 'armin-transport.auth.refresh';
+/**
+ * What one tab stores reaches the other tabs a moment later, and not in step with the lock:
+ * a tab can be given the lock before it sees the session that the previous holder stored.
+ * So the tab that renewed keeps the lock a little longer than it needs it ...
+ */
+const STORAGE_SETTLE_MS = 150;
+/** ... and a tab that had to wait for the lock waits at most this long for the renewed session to arrive. */
+const STORAGE_CATCH_UP_MS = 1000;
 
 const NETWORK_MESSAGE = 'ارتباط با سرور برقرار نشد. اتصال اینترنت خود را بررسی و دوباره تلاش کنید.';
 const UNEXPECTED_MESSAGE = 'پاسخ نامعتبری از سرور دریافت شد. لطفاً دوباره تلاش کنید.';
@@ -93,7 +101,13 @@ async function toApiError(response) {
   return new ApiError({ status: response.status, code: 'unexpected_response' });
 }
 
-export function createApiClient({ baseUrl, session, fetchImpl, locks = null, now = () => Date.now(), onSessionEnded = () => {} }) {
+const realDelay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+/**
+ * `locks` is `navigator.locks` or a stand-in with the same `request()` (see locks.js); without it
+ * the client assumes that it is alone. `delay(ms)` resolves after that time (tests pass their own).
+ */
+export function createApiClient({ baseUrl, session, fetchImpl, locks = null, now = () => Date.now(), delay = realDelay, onSessionEnded = () => {} }) {
   let refreshInFlight = null;
 
   async function send(method, path, { query, json, formData, signal, token } = {}) {
@@ -119,27 +133,78 @@ export function createApiClient({ baseUrl, session, fetchImpl, locks = null, now
     onSessionEnded(error);
   }
 
-  function runExclusive(task) {
-    return locks && typeof locks.request === 'function' ? locks.request(REFRESH_LOCK_NAME, task) : task();
+  /**
+   * Runs `task(waited)` while no other tab runs one. `waited` tells that another tab held the lock first.
+   * When the task resolves to `true` it has stored a new session, and the lock is kept until the other tabs have received it.
+   */
+  async function runExclusive(task) {
+    if (locks === null || typeof locks.request !== 'function') {
+      await task(false);
+      return;
+    }
+    const hold = async (waited) => {
+      if (await task(waited)) await delay(STORAGE_SETTLE_MS);
+    };
+    const wasFree = await locks.request(REFRESH_LOCK_NAME, { ifAvailable: true }, async (lock) => {
+      if (lock === null) return false;
+      await hold(false);
+      return true;
+    });
+    if (!wasFree) await locks.request(REFRESH_LOCK_NAME, () => hold(true));
+  }
+
+  /** Resolves when the stored session is no longer the one with `refreshToken`, at the latest after STORAGE_CATCH_UP_MS. */
+  function sessionChange(refreshToken) {
+    return new Promise((resolve) => {
+      const unsubscribe = session.subscribe((current) => {
+        if (current === null || current.refreshToken !== refreshToken) finish();
+      });
+      function finish() {
+        unsubscribe();
+        resolve();
+      }
+      delay(STORAGE_CATCH_UP_MS).then(finish);
+    });
+  }
+
+  /** The part of a renewal that runs under the lock. Resolves to `{ token, stored }`. */
+  async function renew(seenRefreshToken, waited) {
+    let current = session.read();
+    // Another tab held the lock, most likely to renew this very session, and what it stored may not have arrived yet.
+    // Sending the old refresh token again would look like theft to the server and end the session in every tab.
+    if (waited && current !== null && current.refreshToken === seenRefreshToken) {
+      await sessionChange(seenRefreshToken);
+      current = session.read();
+    }
+    if (current === null) throw new ApiError({ status: 401, code: 'authentication_required', message: SESSION_ENDED_MESSAGE });
+    // Another tab renewed the session while this one waited for the lock: use its result.
+    if (current.refreshToken !== seenRefreshToken && current.accessExpiresAt - now() > EXPIRY_SKEW_MS) {
+      return { token: current.accessToken, stored: false };
+    }
+    const response = await send('POST', '/auth/refresh', { json: { refresh_token: current.refreshToken } });
+    if (!response.ok) throw await toApiError(response);
+    const envelope = await readEnvelope(response);
+    if (!envelope?.data?.access_token) throw new ApiError({ status: response.status, code: 'unexpected_response' });
+    session.setFromAuthResponse(envelope.data);
+    return { token: envelope.data.access_token, stored: true };
   }
 
   /** Renews the tokens once, no matter how many requests ask at the same time. Resolves to the new access token. */
   function refreshAccessToken() {
     if (refreshInFlight === null) {
       const seenRefreshToken = session.read()?.refreshToken ?? null;
-      refreshInFlight = runExclusive(async () => {
-        const current = session.read();
-        if (current === null) throw new ApiError({ status: 401, code: 'authentication_required', message: SESSION_ENDED_MESSAGE });
-        // Another tab renewed the session while this one waited for the lock: use its result.
-        if (current.refreshToken !== seenRefreshToken && current.accessExpiresAt - now() > EXPIRY_SKEW_MS) {
-          return current.accessToken;
-        }
-        const response = await send('POST', '/auth/refresh', { json: { refresh_token: current.refreshToken } });
-        if (!response.ok) throw await toApiError(response);
-        const envelope = await readEnvelope(response);
-        if (!envelope?.data?.access_token) throw new ApiError({ status: response.status, code: 'unexpected_response' });
-        session.setFromAuthResponse(envelope.data);
-        return envelope.data.access_token;
+      // The requests of this tab go on as soon as the token is there; the lock may be held a little longer.
+      refreshInFlight = new Promise((resolve, reject) => {
+        runExclusive(async (waited) => {
+          try {
+            const { token, stored } = await renew(seenRefreshToken, waited);
+            resolve(token);
+            return stored;
+          } catch (error) {
+            reject(error);
+            return false;
+          }
+        }).catch(reject);
       }).finally(() => {
         refreshInFlight = null;
       });
