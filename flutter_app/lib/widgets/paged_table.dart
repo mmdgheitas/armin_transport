@@ -99,7 +99,10 @@ class ResponsiveTable<T> extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Align(alignment: AlignmentDirectional.centerStart, child: column.cell(context, item)),
+                            child: Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: column.cell(context, item),
+                            ),
                           ),
                         ],
                       ),
@@ -265,7 +268,9 @@ class _Pager extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          Expanded(child: Text(summary, style: const TextStyle(fontSize: 13, color: AppColors.muted))),
+          Expanded(
+            child: Text(summary, style: const TextStyle(fontSize: 13, color: AppColors.muted)),
+          ),
           if (pages > 1) ...[
             // These icons are mirrored in right-to-left text: "left" points back, towards the previous page.
             TextButton.icon(

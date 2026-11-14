@@ -93,7 +93,11 @@ class ErrorBlock extends StatelessWidget {
             ],
             if (onRetry != null) ...[
               const SizedBox(height: 16),
-              OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh, size: 18), label: const Text('تلاش دوباره')),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('تلاش دوباره'),
+              ),
             ],
           ],
         ),
@@ -123,10 +127,18 @@ class EmptyBlock extends StatelessWidget {
           children: [
             Icon(icon, size: 40, color: AppColors.borderStrong),
             const SizedBox(height: 12),
-            Text(title, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted)),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.muted),
+            ),
             if (text != null) ...[
               const SizedBox(height: 4),
-              Text(text, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: AppColors.muted)),
+              Text(
+                text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13, color: AppColors.muted),
+              ),
             ],
             if (action != null) ...[const SizedBox(height: 16), action!],
           ],
@@ -166,7 +178,10 @@ class StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(color: colors.background, borderRadius: BorderRadius.circular(999)),
-      child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: colors.foreground)),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: colors.foreground),
+      ),
     );
   }
 }
@@ -203,7 +218,9 @@ class Notice extends StatelessWidget {
         children: [
           Icon(icon ?? _icons[tone], size: 20, color: colors.foreground),
           const SizedBox(width: 8),
-          Expanded(child: Text(message, style: TextStyle(color: colors.foreground, height: 1.6))),
+          Expanded(
+            child: Text(message, style: TextStyle(color: colors.foreground, height: 1.6)),
+          ),
         ],
       ),
     );

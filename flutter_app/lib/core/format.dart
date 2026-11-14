@@ -124,7 +124,9 @@ String formatDuration(num? seconds) {
   if (minutes < 60) return '${toPersianDigits(minutes)} دقیقه';
   final hours = minutes ~/ 60;
   final rest = minutes % 60;
-  return rest == 0 ? '${toPersianDigits(hours)} ساعت' : '${toPersianDigits(hours)} ساعت و ${toPersianDigits(rest)} دقیقه';
+  return rest == 0
+      ? '${toPersianDigits(hours)} ساعت'
+      : '${toPersianDigits(hours)} ساعت و ${toPersianDigits(rest)} دقیقه';
 }
 
 const Map<String, String> fieldTypeLabels = {

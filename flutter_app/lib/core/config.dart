@@ -56,7 +56,8 @@ class ServerAddress {
       }
       if (!isLocalNetworkHost(uri.host)) {
         return const ServerAddress._(
-          problem: 'برای سرورهای اینترنتی فقط نشانی امن (https) پذیرفته می‌شود. اتصال http تنها در شبکهٔ داخلی مجاز است.',
+          problem:
+              'برای سرورهای اینترنتی فقط نشانی امن (https) پذیرفته می‌شود. اتصال http تنها در شبکهٔ داخلی مجاز است.',
         );
       }
     }

@@ -83,12 +83,7 @@ String? navPathOf(String path) {
 /// - Without the address of a server nothing but the setup screen is usable.
 /// - The tracking screen is open to everyone; every other screen needs a signed-in employee.
 /// - Whoever is sent to the login screen continues afterwards where they wanted to go.
-String? redirectFor(
-  Uri location, {
-  required bool hasServer,
-  required bool serverIsFixed,
-  required bool signedIn,
-}) {
+String? redirectFor(Uri location, {required bool hasServer, required bool serverIsFixed, required bool signedIn}) {
   final path = _normalize(location.path);
   if (!hasServer) return path == AppPaths.setup ? null : AppPaths.setup;
   // An address that is built into the app cannot be changed, so there is nothing to set up.

@@ -75,10 +75,7 @@ class _ShipmentGoodsTabState extends ConsumerState<ShipmentGoodsTab> {
             Row(
               children: [
                 const Expanded(
-                  child: Text(
-                    'مقادیر ثبت‌شده برای این محموله',
-                    style: TextStyle(fontSize: 13, color: AppColors.muted),
-                  ),
+                  child: Text('مقادیر ثبت‌شده برای این محموله', style: TextStyle(fontSize: 13, color: AppColors.muted)),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(

@@ -237,7 +237,11 @@ class ApiClient {
   Future<String> _renew() async {
     final current = _readSession();
     if (current == null) throw ApiError(status: 401, code: 'authentication_required', message: sessionEndedMessage);
-    final response = await _send('POST', '/auth/refresh', json: <String, dynamic>{'refresh_token': current.refreshToken});
+    final response = await _send(
+      'POST',
+      '/auth/refresh',
+      json: <String, dynamic>{'refresh_token': current.refreshToken},
+    );
     if (!_isOk(response)) throw _toApiError(response);
     final renewed = AuthSession.fromAuthResponse(_readEnvelope(response)?['data'], _now());
     if (renewed == null) throw ApiError(status: response.statusCode ?? 0, code: 'unexpected_response');
@@ -345,7 +349,8 @@ class ApiClient {
   Future<ApiResult> get(String path, {Map<String, Object?>? query, bool auth = true}) =>
       request('GET', path, query: query, auth: auth);
 
-  Future<ApiResult> post(String path, {Object? json, bool auth = true}) => request('POST', path, json: json, auth: auth);
+  Future<ApiResult> post(String path, {Object? json, bool auth = true}) =>
+      request('POST', path, json: json, auth: auth);
 
   Future<ApiResult> put(String path, {Object? json}) => request('PUT', path, json: json);
 
@@ -360,7 +365,14 @@ class ApiClient {
     Map<String, String> fields = const <String, String>{},
     void Function(int sent, int total)? onProgress,
   }) async {
-    final response = await _exchange('POST', path, auth: true, files: files, fields: fields, onSendProgress: onProgress);
+    final response = await _exchange(
+      'POST',
+      path,
+      auth: true,
+      files: files,
+      fields: fields,
+      onSendProgress: onProgress,
+    );
     return _result(response);
   }
 

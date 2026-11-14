@@ -99,7 +99,10 @@ void main() {
     expect(start, expectedInstant(2026, 11, 10, 0, 0));
     expect(end, matches(RegExp(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:59Z$')));
     // The whole day lies between the two, to the second.
-    expect(DateTime.parse(end!).difference(DateTime.parse(start!)), const Duration(hours: 23, minutes: 59, seconds: 59));
+    expect(
+      DateTime.parse(end!).difference(DateTime.parse(start!)),
+      const Duration(hours: 23, minutes: 59, seconds: 59),
+    );
     expect(DateTime.parse(end).toLocal().day, 10);
     expect(startOfLocalDay('2026-02-30'), isNull);
     expect(endOfLocalDay('garbage'), isNull);
@@ -193,7 +196,11 @@ void main() {
 
   test('maps API validation errors back to field keys', () {
     expect(
-      fieldErrorsFromApi({'values.weight': 'مقدار باید دست‌کم ۰ باشد.', 'values.name': 'الف ب', 'description': 'نامعتبر'}),
+      fieldErrorsFromApi({
+        'values.weight': 'مقدار باید دست‌کم ۰ باشد.',
+        'values.name': 'الف ب',
+        'description': 'نامعتبر',
+      }),
       {'weight': 'مقدار باید دست‌کم ۰ باشد.', 'name': 'الف ب'},
     );
     expect(fieldErrorsFromApi(const {}), isEmpty);
@@ -242,7 +249,10 @@ void main() {
     expect(broken.rules, isNull);
 
     expect(
-      buildValidationRules('DATETIME', {'min': FieldInput(date: '2026-11-10', time: '08:00'), 'max': FieldInput()}).rules,
+      buildValidationRules('DATETIME', {
+        'min': FieldInput(date: '2026-11-10', time: '08:00'),
+        'max': FieldInput(),
+      }).rules,
       {'min': expectedInstant(2026, 11, 10, 8, 0)},
     );
     expect(buildValidationRules('DATETIME', {'min': FieldInput(date: '2026-11-10')}).rules, {
@@ -250,7 +260,10 @@ void main() {
     });
     expect(buildValidationRules('DATETIME', {'min': FieldInput(dateIncomplete: true)}).errors, contains('min'));
     expect(buildValidationRules('DATETIME', {'min': FieldInput(time: '10:00')}).errors, contains('min'));
-    expect(buildValidationRules('DATETIME', {'min': FieldInput(date: '2026-11-10', time: 'x')}).errors, contains('min'));
+    expect(
+      buildValidationRules('DATETIME', {'min': FieldInput(date: '2026-11-10', time: 'x')}).errors,
+      contains('min'),
+    );
     expect(buildValidationRules('DATETIME', {}).rules, isNull);
   });
 

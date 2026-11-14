@@ -130,15 +130,7 @@ class _ShipmentsPageState extends ConsumerState<ShipmentsPage> {
       _to = const JalaliDateValue();
       _errors = const <String, String>{};
       _formVersion += 1;
-      _applied = (
-        search: '',
-        status: null,
-        codeType: null,
-        companyId: null,
-        from: null,
-        to: null,
-        sort: _sort,
-      );
+      _applied = (search: '', status: null, codeType: null, companyId: null, from: null, to: null, sort: _sort);
     });
   }
 

@@ -59,7 +59,10 @@ class DialogFrame extends StatelessWidget {
     return AlertDialog(
       title: Text(title),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      content: SizedBox(width: width, child: SingleChildScrollView(child: child)),
+      content: SizedBox(
+        width: width,
+        child: SingleChildScrollView(child: child),
+      ),
       actions: actions,
     );
   }

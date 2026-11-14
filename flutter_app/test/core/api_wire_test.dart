@@ -220,7 +220,12 @@ void main() {
         expect(jsonDecode(utf8.decode(body)), {'refresh_token': 'refresh-token-1-padding-padding'});
         sendJson(request, 200, {'success': true, 'message': '', 'data': authPayload('2'), 'errors': null});
       } else if (request.headers.value('authorization') == 'Bearer access-2') {
-        sendJson(request, 200, {'success': true, 'message': 'ok', 'data': {'fine': true}, 'errors': null});
+        sendJson(request, 200, {
+          'success': true,
+          'message': 'ok',
+          'data': {'fine': true},
+          'errors': null,
+        });
       } else {
         sendJson(request, 401, {
           'success': false,
@@ -233,11 +238,10 @@ void main() {
     final harness = client();
     final result = await harness.api.get('/dashboard/summary');
     expect(result.json, {'fine': true});
-    expect([for (final request in received) Uri.parse(request.path).path], [
-      '/api/v1/dashboard/summary',
-      '/api/v1/auth/refresh',
-      '/api/v1/dashboard/summary',
-    ]);
+    expect(
+      [for (final request in received) Uri.parse(request.path).path],
+      ['/api/v1/dashboard/summary', '/api/v1/auth/refresh', '/api/v1/dashboard/summary'],
+    );
     expect(received[1].headers.containsKey('authorization'), isFalse);
     expect(harness.session()!.accessToken, 'access-2');
     expect(harness.ended, isEmpty);

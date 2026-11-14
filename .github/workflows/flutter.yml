@@ -62,14 +62,14 @@ jobs:
           set -o pipefail
           # The lock file is committed: the versions in it are the ones that were tested.
           flutter pub get --enforce-lockfile 2>&1 | tee "$RUNNER_TEMP/out/pub-get.txt"
-      - name: Format (one-off; the formatted sources are attached for the commit that follows)
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - name: Formatting (a notice, never a failure)
         run: |
-          dart format lib test | tail -n 3 || true
-          git status --short . | wc -l
-          tar czf - lib test | base64 -w 76 > "$RUNNER_TEMP/formatted.b64"
-          node ../tools/ci/publish-check.mjs format "$RUNNER_TEMP/formatted.b64"
+          # The sources follow "dart format" with the line width from analysis_options.yaml, so an
+          # editor that formats on save changes nothing but what was edited.
+          changed=$(dart format --output=none lib test | grep -c '^Changed' || true)
+          if [ "${changed:-0}" != "0" ]; then
+            echo "::notice title=Formatting::$changed file(s) differ from the output of 'dart format lib test'."
+          fi
       - name: Analyze
         id: analyze
         continue-on-error: true
@@ -88,6 +88,10 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           FAILED: ${{ job.status != 'success' || steps.analyze.outcome != 'success' || steps.test.outcome != 'success' }}
         run: |
+          if [ -s "$RUNNER_TEMP/out/test.txt" ]; then
+            # The last line of the test run, e.g. "00:48 +217: All tests passed!"
+            echo "::notice title=Tests::$(tail -n 1 "$RUNNER_TEMP/out/test.txt" | tr -d '\r')"
+          fi
           if [ "$FAILED" = "true" ]; then
             node ../tools/ci/publish-check.mjs flutter "$RUNNER_TEMP"/out/*.txt
           elif grep -q ' • ' "$RUNNER_TEMP/out/analyze.txt"; then

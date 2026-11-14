@@ -85,7 +85,11 @@ class _ShipmentDocumentsTabState extends ConsumerState<ShipmentDocumentsTab> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (!archived && auth.can('document:upload')) ...[
-          _UploadPanel(shipmentId: shipment.id, settings: auth.settings.upload, onUploaded: () => _listChanged(page: 1)),
+          _UploadPanel(
+            shipmentId: shipment.id,
+            settings: auth.settings.upload,
+            onUploaded: () => _listChanged(page: 1),
+          ),
           const Divider(),
         ],
         PagedTable<ShipmentDocument>(

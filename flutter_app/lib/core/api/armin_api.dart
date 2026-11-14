@@ -109,7 +109,10 @@ class ArminApi {
   }
 
   Future<PageOf<TrackingHistoryEntry>> trackingHistory(String id, {int page = 1, int? perPage}) async {
-    final result = await client.get('/shipments/${_id(id)}/tracking-history', query: {'page': page, 'per_page': perPage});
+    final result = await client.get(
+      '/shipments/${_id(id)}/tracking-history',
+      query: {'page': page, 'per_page': perPage},
+    );
     return PageOf<TrackingHistoryEntry>.fromJson(result.data, TrackingHistoryEntry.fromJson);
   }
 
@@ -172,7 +175,10 @@ class ArminApi {
   // -------------------------------------------------------------------------------------------- documents
 
   Future<PageOf<ShipmentDocument>> documents(String shipmentId, {int page = 1, int? perPage}) async {
-    final result = await client.get('/shipments/${_id(shipmentId)}/documents', query: {'page': page, 'per_page': perPage});
+    final result = await client.get(
+      '/shipments/${_id(shipmentId)}/documents',
+      query: {'page': page, 'per_page': perPage},
+    );
     return PageOf<ShipmentDocument>.fromJson(result.data, ShipmentDocument.fromJson);
   }
 
@@ -199,9 +205,11 @@ class ArminApi {
     return Done(ShipmentDocument.fromJson(result.json), result.message);
   }
 
-  Future<String> deleteDocument(String documentId) async => (await client.delete('/documents/${_id(documentId)}')).message;
+  Future<String> deleteDocument(String documentId) async =>
+      (await client.delete('/documents/${_id(documentId)}')).message;
 
-  Future<DownloadedFile> downloadDocument(String documentId) => client.download('/documents/${_id(documentId)}/download');
+  Future<DownloadedFile> downloadDocument(String documentId) =>
+      client.download('/documents/${_id(documentId)}/download');
 
   // -------------------------------------------------------------------------------------------- companies
 
@@ -314,7 +322,11 @@ class ArminApi {
       CustomerShipment.fromJson((await client.get(_access(grant, '/shipment'), auth: false)).json);
 
   Future<PageOf<CustomerDocument>> customerDocuments(CustomerGrant grant, {int page = 1, int? perPage}) async {
-    final result = await client.get(_access(grant, '/documents'), auth: false, query: {'page': page, 'per_page': perPage});
+    final result = await client.get(
+      _access(grant, '/documents'),
+      auth: false,
+      query: {'page': page, 'per_page': perPage},
+    );
     return PageOf<CustomerDocument>.fromJson(result.data, CustomerDocument.fromJson);
   }
 

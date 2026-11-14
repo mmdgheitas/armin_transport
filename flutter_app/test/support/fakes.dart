@@ -12,12 +12,7 @@ import 'package:dio/dio.dart';
 
 /// One request as the transport received it.
 class RecordedRequest {
-  RecordedRequest({
-    required this.method,
-    required this.uri,
-    required this.headers,
-    required this.bodyBytes,
-  });
+  RecordedRequest({required this.method, required this.uri, required this.headers, required this.bodyBytes});
 
   final String method;
   final Uri uri;
@@ -62,10 +57,7 @@ class FakeAdapter implements HttpClientAdapter {
     final request = RecordedRequest(
       method: options.method,
       uri: options.uri,
-      headers: {
-        for (final entry in options.headers.entries)
-          entry.key.toLowerCase(): '${entry.value}',
-      },
+      headers: {for (final entry in options.headers.entries) entry.key.toLowerCase(): '${entry.value}'},
       bodyBytes: body.takeBytes(),
     );
     calls.add(request);
@@ -77,28 +69,16 @@ class FakeAdapter implements HttpClientAdapter {
 }
 
 /// A [Dio] configured like the one of the app, answering from [adapter].
-Dio fakeDio(FakeAdapter adapter) =>
-    ApiClient.createDio()..httpClientAdapter = adapter;
+Dio fakeDio(FakeAdapter adapter) => ApiClient.createDio()..httpClientAdapter = adapter;
 
 const Map<String, List<String>> _jsonHeaders = {
   'content-type': ['application/json; charset=utf-8'],
 };
 
-ResponseBody jsonResponse(
-  int status,
-  Object? body, {
-  Map<String, List<String>> headers = const {},
-}) => ResponseBody.fromString(
-  jsonEncode(body),
-  status,
-  headers: {..._jsonHeaders, ...headers},
-);
+ResponseBody jsonResponse(int status, Object? body, {Map<String, List<String>> headers = const {}}) =>
+    ResponseBody.fromString(jsonEncode(body), status, headers: {..._jsonHeaders, ...headers});
 
-ResponseBody textResponse(
-  int status,
-  String body, {
-  String contentType = 'text/html',
-}) => ResponseBody.fromString(
+ResponseBody textResponse(int status, String body, {String contentType = 'text/html'}) => ResponseBody.fromString(
   body,
   status,
   headers: {
@@ -107,29 +87,17 @@ ResponseBody textResponse(
 );
 
 /// A successful response envelope.
-ResponseBody ok(
-  Object? data, {
-  String message = 'انجام شد.',
-  int status = 200,
-}) => jsonResponse(status, {
-  'success': true,
-  'message': message,
-  'data': data,
-  'errors': null,
-});
+ResponseBody ok(Object? data, {String message = 'انجام شد.', int status = 200}) =>
+    jsonResponse(status, {'success': true, 'message': message, 'data': data, 'errors': null});
 
 /// An error response envelope.
-ResponseBody errorResponse(
-  int status,
-  String code, {
-  String message = 'خطا',
-  Map<String, dynamic> extra = const {},
-}) => jsonResponse(status, {
-  'success': false,
-  'message': message,
-  'data': null,
-  'errors': {'code': code, 'request_id': 'req-test-0001', ...extra},
-});
+ResponseBody errorResponse(int status, String code, {String message = 'خطا', Map<String, dynamic> extra = const {}}) =>
+    jsonResponse(status, {
+      'success': false,
+      'message': message,
+      'data': null,
+      'errors': {'code': code, 'request_id': 'req-test-0001', ...extra},
+    });
 
 /// One page of a list, as the API sends it.
 Json pageOf(List<Object?> items, {int page = 1, int perPage = 20, int? total}) {
@@ -193,12 +161,7 @@ const Json employeeUser = {
   'role': 'EMPLOYEE',
   'is_active': true,
   'company_id': 'c1',
-  'company': {
-    'id': 'c1',
-    'name': 'حمل‌ونقل',
-    'company_code': 'ARMIN',
-    'is_active': true,
-  },
+  'company': {'id': 'c1', 'name': 'حمل‌ونقل', 'company_code': 'ARMIN', 'is_active': true},
 };
 
 const Json adminUser = {
@@ -218,11 +181,7 @@ const Json appSettings = {
     'allowed_extensions': ['pdf', 'jpg', 'jpeg', 'png', 'docx', 'xlsx'],
     'customer_visible_default': true,
   },
-  'tracking_code': {
-    'min_length': 6,
-    'max_length': 64,
-    'pattern': r'^[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?$',
-  },
+  'tracking_code': {'min_length': 6, 'max_length': 64, 'pattern': r'^[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?$'},
   'password': {'min_length': 10},
   'pagination': {'default_page_size': 20, 'max_page_size': 100},
 };
@@ -240,15 +199,12 @@ Json authPayload([String suffix = '1', Json overrides = const {}]) => {
   ...overrides,
 };
 
-Json adminAuthPayload([String suffix = '1']) => authPayload(suffix, const {
-  'user': adminUser,
-  'permissions': adminPermissions,
-});
+Json adminAuthPayload([String suffix = '1']) =>
+    authPayload(suffix, const {'user': adminUser, 'permissions': adminPermissions});
 
 /// A clock that only moves when a test says so.
 class FakeClock {
-  FakeClock([DateTime? start])
-    : now = start ?? DateTime.utc(2026, 11, 10, 8, 30);
+  FakeClock([DateTime? start]) : now = start ?? DateTime.utc(2026, 11, 10, 8, 30);
 
   DateTime now;
 

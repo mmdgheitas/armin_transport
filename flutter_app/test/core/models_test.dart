@@ -10,12 +10,7 @@ const Json shipmentJson = {
   'status': 'ACTIVE',
   'description': 'دو پالت لوازم خانگی',
   'company_id': 'c1',
-  'company': {
-    'id': 'c1',
-    'name': 'حمل‌ونقل',
-    'company_code': 'ARMIN',
-    'is_active': true,
-  },
+  'company': {'id': 'c1', 'name': 'حمل‌ونقل', 'company_code': 'ARMIN', 'is_active': true},
   'created_by': {'id': 'u1', 'full_name': 'سارا محمدی'},
   'document_count': 3,
   'created_at': '2026-11-10T08:30:00Z',
@@ -64,17 +59,9 @@ void main() {
     final session = AuthSession.fromAuthResponse({
       'access_token': 'a',
       'refresh_token': 'r',
-      'user': {
-        'id': 'u9',
-        'username': 'x',
-        'full_name': 'ی',
-        'role': 'EMPLOYEE',
-      },
+      'user': {'id': 'u9', 'username': 'x', 'full_name': 'ی', 'role': 'EMPLOYEE'},
     }, DateTime.utc(2026))!;
-    expect(
-      session.accessExpiresAt,
-      DateTime.utc(2026).add(const Duration(seconds: 900)),
-    );
+    expect(session.accessExpiresAt, DateTime.utc(2026).add(const Duration(seconds: 900)));
     expect(session.permissions, isEmpty);
     expect(session.settings.upload.allowedExtensions, isEmpty);
     expect(session.settings.trackingCode.maxLength, 64);
@@ -83,10 +70,7 @@ void main() {
   });
 
   test('keeps a session through storage', () {
-    final session = AuthSession.fromAuthResponse(
-      adminAuthPayload('7'),
-      DateTime.utc(2026, 11, 10, 8, 30),
-    )!;
+    final session = AuthSession.fromAuthResponse(adminAuthPayload('7'), DateTime.utc(2026, 11, 10, 8, 30))!;
     final restored = AuthSession.fromStorageJson(session.toStorageJson())!;
     expect(restored.accessToken, 'access-7');
     expect(restored.refreshToken, session.refreshToken);
@@ -94,22 +78,13 @@ void main() {
     expect(restored.refreshExpiresAt, session.refreshExpiresAt);
     expect(restored.user.username, 'admin');
     expect(restored.permissions, session.permissions);
-    expect(
-      restored.settings.upload.allowedExtensions,
-      session.settings.upload.allowedExtensions,
-    );
+    expect(restored.settings.upload.allowedExtensions, session.settings.upload.allowedExtensions);
     expect(AuthSession.fromStorageJson(null), isNull);
-    expect(
-      AuthSession.fromStorageJson(<String, dynamic>{'version': 1}),
-      isNull,
-    );
+    expect(AuthSession.fromStorageJson(<String, dynamic>{'version': 1}), isNull);
   });
 
   test('applies a fresh profile without touching the tokens', () {
-    final session = AuthSession.fromAuthResponse(
-      authPayload(),
-      DateTime.utc(2026, 11, 10),
-    )!;
+    final session = AuthSession.fromAuthResponse(authPayload(), DateTime.utc(2026, 11, 10))!;
     final updated = session.withProfile({
       'user': {...employeeUser, 'full_name': 'نام تازه'},
       'permissions': ['shipment:view'],
@@ -129,17 +104,11 @@ void main() {
     expect(unchanged.user.fullName, session.user.fullName);
     expect(unchanged.permissions, session.permissions);
     // The stored form of the updated session carries the new profile.
-    expect(
-      AuthSession.fromStorageJson(updated.toStorageJson())!.user.fullName,
-      'نام تازه',
-    );
+    expect(AuthSession.fromStorageJson(updated.toStorageJson())!.user.fullName, 'نام تازه');
   });
 
   test('reads a page of a list', () {
-    final page = PageOf<Shipment>.fromJson(
-      pageOf([shipmentJson, 'not an object', null], total: 45),
-      Shipment.fromJson,
-    );
+    final page = PageOf<Shipment>.fromJson(pageOf([shipmentJson, 'not an object', null], total: 45), Shipment.fromJson);
     expect(page.items, hasLength(1));
     expect(page.pagination.page, 1);
     expect(page.pagination.perPage, 20);
@@ -168,11 +137,7 @@ void main() {
     expect(shipment.documentCount, 3);
     expect(shipment.createdAt, DateTime.utc(2026, 11, 10, 8, 30));
 
-    final archived = Shipment.fromJson({
-      ...shipmentJson,
-      'status': 'ARCHIVED',
-      'tracking_code_type': 'MANUAL',
-    });
+    final archived = Shipment.fromJson({...shipmentJson, 'status': 'ARCHIVED', 'tracking_code_type': 'MANUAL'});
     expect(archived.isArchived, isTrue);
     expect(archived.statusLabel, 'بایگانی‌شده');
     expect(archived.codeTypeLabel, 'دستی');
@@ -255,24 +220,13 @@ void main() {
       'metadata': {'tracking_code': 'ARMN-7K2P-9QXD-4M8T'},
       'ip_address': '192.0.2.7',
       'request_id': 'req-1',
-      'user': {
-        'id': 'u1',
-        'username': 'armin.operator',
-        'full_name': 'سارا محمدی',
-      },
+      'user': {'id': 'u1', 'username': 'armin.operator', 'full_name': 'سارا محمدی'},
       'created_at': '2026-11-10T08:30:00Z',
     });
     expect(entry.action, 'shipment.created');
     expect(entry.user!.username, 'armin.operator');
     expect(entry.metadata, {'tracking_code': 'ARMN-7K2P-9QXD-4M8T'});
-    expect(
-      AuditLogEntry.fromJson({
-        'id': 'a2',
-        'action': 'auth.login_failed',
-        'user': null,
-      }).user,
-      isNull,
-    );
+    expect(AuditLogEntry.fromJson({'id': 'a2', 'action': 'auth.login_failed', 'user': null}).user, isNull);
   });
 
   test('reads goods fields and their values', () {
@@ -330,21 +284,13 @@ void main() {
     expect(global.isGlobal, isTrue);
     expect(global.companies!.total, 3);
     expect(global.employees!.active, 8);
-    expect(
-      (global.shipmentsTotal, global.shipmentsActive, global.shipmentsArchived),
-      (120, 100, 20),
-    );
+    expect((global.shipmentsTotal, global.shipmentsActive, global.shipmentsArchived), (120, 100, 20));
     expect(global.documents, 340);
     expect(global.recentShipments.single.id, 's1');
 
     final own = DashboardSummary.fromJson({
       'scope': 'COMPANY',
-      'company': {
-        'id': 'c1',
-        'name': 'حمل‌ونقل',
-        'company_code': 'ARMIN',
-        'is_active': true,
-      },
+      'company': {'id': 'c1', 'name': 'حمل‌ونقل', 'company_code': 'ARMIN', 'is_active': true},
       'companies': null,
       'employees': null,
       'shipments': {'total': 5, 'active': 4, 'archived': 1},
@@ -382,10 +328,7 @@ void main() {
     expect(shipment.companyName, 'حمل‌ونقل');
     expect(shipment.description, isNull);
     expect(shipment.documentCount, 2);
-    expect(shipment.productDetails.map((detail) => detail.label), [
-      'وزن',
-      'شکستنی',
-    ]);
+    expect(shipment.productDetails.map((detail) => detail.label), ['وزن', 'شکستنی']);
     expect(shipment.productDetails.last.value, isFalse);
     expect(shipment.sessionExpiresAt, DateTime.utc(2026, 11, 10, 9));
 
@@ -417,17 +360,9 @@ void main() {
     expect(company.phone, '02112345678');
     expect(company.address, isNull);
     expect((company.employeeCount, company.shipmentCount), (4, 12));
-    expect(
-      Company.fromJson({'id': 'c2', 'name': 'پارس', 'company_code': 'PARS'})
-          .employeeCount,
-      isNull,
-    );
+    expect(Company.fromJson({'id': 'c2', 'name': 'پارس', 'company_code': 'PARS'}).employeeCount, isNull);
 
-    final user = UserAccount.fromJson({
-      ...employeeUser,
-      'last_login_at': '2026-11-09T07:00:00Z',
-      'is_active': false,
-    });
+    final user = UserAccount.fromJson({...employeeUser, 'last_login_at': '2026-11-09T07:00:00Z', 'is_active': false});
     expect(user.isActive, isFalse);
     expect(user.companyId, 'c1');
     expect(user.lastLoginAt, DateTime.utc(2026, 11, 9, 7));

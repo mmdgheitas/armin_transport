@@ -20,8 +20,7 @@ void main() {
       auth: authPayload(),
       location: '/shipments',
       routes: {
-        'GET /shipments': (request) =>
-            ok(pageOf(request.query['q'] == 'هیچ' ? const <Json>[] : twoShipments())),
+        'GET /shipments': (request) => ok(pageOf(request.query['q'] == 'هیچ' ? const <Json>[] : twoShipments())),
       },
     );
     expect(find.text('محموله‌های شرکت شما'), findsOneWidget);
@@ -72,7 +71,13 @@ void main() {
       routes: {
         'GET /shipments': (request) {
           final page = int.parse(request.query['page'] ?? '1');
-          return ok(pageOf([shipmentJson(id: 'p$page', code: 'ARMN-PAGE-000$page')], page: page, total: 45));
+          return ok(
+            pageOf(
+              [shipmentJson(id: 'p$page', code: 'ARMN-PAGE-000$page')],
+              page: page,
+              total: 45,
+            ),
+          );
         },
       },
     );
@@ -96,9 +101,8 @@ void main() {
       location: '/shipments',
       routes: {
         'GET /shipments': (request) => ok(pageOf(twoShipments())),
-        'GET /companies': (request) => ok(
-          pageOf([companyJson(), companyJson(id: 'c2', name: 'باربری کویر', code: 'KAVIR', active: false)]),
-        ),
+        'GET /companies': (request) =>
+            ok(pageOf([companyJson(), companyJson(id: 'c2', name: 'باربری کویر', code: 'KAVIR', active: false)])),
       },
     );
     expect(find.text('محموله‌های همهٔ شرکت‌ها'), findsOneWidget);
@@ -213,10 +217,7 @@ void main() {
         routes: {
           'GET /shipments': (request) => ok(pageOf(const <Json>[])),
           'GET /product-fields': (request) => ok(
-            pageOf([
-              fieldJson(required: true),
-              fieldJson(id: 'f2', key: 'fragile', label: 'شکستنی', type: 'BOOLEAN'),
-            ]),
+            pageOf([fieldJson(required: true), fieldJson(id: 'f2', key: 'fragile', label: 'شکستنی', type: 'BOOLEAN')]),
           ),
           'POST /shipments': (request) => ok(shipmentJson(id: 's9'), message: 'محموله ثبت شد.', status: 201),
           'GET /shipments/s9': (request) => ok(shipmentJson(id: 's9')),

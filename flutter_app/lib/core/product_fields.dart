@@ -110,10 +110,11 @@ String? endOfLocalDay(String? isoDate) {
   return start == null ? null : _isoInstant(start.add(const Duration(seconds: 86399)));
 }
 
-String _normalizeNumberText(String text) => toLatinDigits(text)
-    .replaceAll(RegExp(r'[٬,\s]'), '') // thousands separators
-    .replaceAll(RegExp('[٫/]'), '.') // Persian decimal separators
-    .replaceAll(RegExp('[\u2212\u2013]'), '-');
+String _normalizeNumberText(String text) =>
+    toLatinDigits(text)
+        .replaceAll(RegExp(r'[٬,\s]'), '') // thousands separators
+        .replaceAll(RegExp('[٫/]'), '.') // Persian decimal separators
+        .replaceAll(RegExp('[\u2212\u2013]'), '-');
 
 // 2^53 - 1: larger integers do not survive a trip through JSON in every client.
 const int _maxSafeInteger = 9007199254740991;
@@ -160,7 +161,10 @@ ParsedValue inputToApiValue(ProductField field, FieldInput input) {
       return ParsedValue.value(input.flag);
     case 'MULTI_SELECT':
       // Options keep the order of the definition, whatever the order of the taps.
-      final chosen = [for (final option in field.options) if (input.choices.contains(option.value)) option.value];
+      final chosen = [
+        for (final option in field.options)
+          if (input.choices.contains(option.value)) option.value,
+      ];
       return ParsedValue.value(chosen.isEmpty ? null : chosen);
     case 'DATETIME':
       if (input.dateIncomplete) return const ParsedValue.error('تاریخ را کامل و درست وارد کنید.');
@@ -199,7 +203,10 @@ String? dateLimitProblem(ProductField field, Object value) {
 
 /// Collects API values for all [fields] from [inputs] (keyed by field key).
 /// `errors` maps field keys to messages and is empty on success.
-({Json values, Map<String, String> errors}) collectFieldValues(List<ProductField> fields, Map<String, FieldInput> inputs) {
+({Json values, Map<String, String> errors}) collectFieldValues(
+  List<ProductField> fields,
+  Map<String, FieldInput> inputs,
+) {
   final values = <String, dynamic>{};
   final errors = <String, String>{};
   for (final field in fields) {
@@ -357,7 +364,9 @@ const String _invalidRuleDate = 'تاریخ واردشده کامل یا معت�
     final value = row.value.trim();
     final label = row.label.trim();
     if (value.isEmpty && label.isEmpty) continue;
-    if (value.isEmpty || label.isEmpty) return (options: null, error: 'برای هر گزینه هم مقدار و هم برچسب را وارد کنید.');
+    if (value.isEmpty || label.isEmpty) {
+      return (options: null, error: 'برای هر گزینه هم مقدار و هم برچسب را وارد کنید.');
+    }
     if (!seen.add(value)) return (options: null, error: 'مقدار گزینهٔ «$value» تکراری است.');
     options.add(<String, dynamic>{'value': value, 'label': label});
   }

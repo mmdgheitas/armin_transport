@@ -180,7 +180,10 @@ class _Sidebar extends StatelessWidget {
             children: [
               const Padding(
                 padding: EdgeInsets.fromLTRB(8, 6, 8, 18),
-                child: Align(alignment: AlignmentDirectional.centerStart, child: Brand(color: Colors.white)),
+                child: Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Brand(color: Colors.white),
+                ),
               ),
               Expanded(
                 child: Semantics(
@@ -260,7 +263,10 @@ class _NavItem extends StatelessWidget {
                   Icon(icon, size: 20, color: color),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w500)),
+                    child: Text(
+                      label,
+                      style: TextStyle(color: color, fontWeight: FontWeight.w500),
+                    ),
                   ),
                 ],
               ),
@@ -326,7 +332,11 @@ class _MessagePage extends StatelessWidget {
             const SizedBox(height: 16),
             Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
-            Text(text, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.muted)),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.muted),
+            ),
             const SizedBox(height: 20),
             FilledButton(onPressed: onHome, child: const Text('بازگشت به صفحهٔ اصلی')),
           ],

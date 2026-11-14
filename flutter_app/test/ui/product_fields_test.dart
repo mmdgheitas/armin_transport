@@ -50,8 +50,7 @@ void main() {
       auth: adminAuthPayload(),
       location: '/product-fields',
       routes: {
-        'GET /product-fields': (request) =>
-            ok(pageOf(request.query['q'] == 'هیچ' ? const <Json>[] : threeFields())),
+        'GET /product-fields': (request) => ok(pageOf(request.query['q'] == 'هیچ' ? const <Json>[] : threeFields())),
       },
     );
     expect(
@@ -238,8 +237,10 @@ void main() {
       location: '/product-fields',
       routes: {
         'GET /product-fields': (request) => ok(pageOf(threeFields())),
-        'POST /product-fields': (request) =>
-            ok(fieldJson(id: 'f9', key: 'fragile', label: 'شکستنی', type: 'BOOLEAN'), message: 'فیلد با موفقیت تعریف شد.'),
+        'POST /product-fields': (request) => ok(
+          fieldJson(id: 'f9', key: 'fragile', label: 'شکستنی', type: 'BOOLEAN'),
+          message: 'فیلد با موفقیت تعریف شد.',
+        ),
       },
     );
     final dialog = find.byType(AlertDialog);

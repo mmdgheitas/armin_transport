@@ -43,9 +43,7 @@ class ShipmentNewPage extends ConsumerWidget {
         AsyncBlock<_FormData>(
           load: () async {
             final fields = await loadActiveProductFields(api, auth.settings);
-            final companies = isGlobal
-                ? await loadAllCompanies(api, auth.settings, isActive: true)
-                : const <Company>[];
+            final companies = isGlobal ? await loadAllCompanies(api, auth.settings, isActive: true) : const <Company>[];
             return (fields: fields, companies: companies);
           },
           builder: (context, data) {
@@ -255,10 +253,7 @@ class _NewShipmentFormState extends ConsumerState<_NewShipmentForm> with FormSup
           spacing: 8,
           runSpacing: 8,
           children: [
-            OutlinedButton(
-              onPressed: busy ? null : () => context.go(AppPaths.shipments),
-              child: const Text('انصراف'),
-            ),
+            OutlinedButton(onPressed: busy ? null : () => context.go(AppPaths.shipments), child: const Text('انصراف')),
             BusyButton(label: 'ثبت محموله', icon: Icons.check, busy: busy, onPressed: _submit),
           ],
         ),

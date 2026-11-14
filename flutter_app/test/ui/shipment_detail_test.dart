@@ -378,8 +378,7 @@ void main() {
               ? errorResponse(409, 'shipment_archived', message: 'محموله بایگانی شده است.')
               : ok(documentJson(visible: false), message: 'نمایش سند تغییر کرد.'),
           'GET /documents/d1/download': (request) => fileResponse([37, 80, 68, 70], filename: 'waybill-final.pdf'),
-          'GET /documents/d2/download': (request) =>
-              errorResponse(404, 'document_not_found', message: 'سند پیدا نشد.'),
+          'GET /documents/d2/download': (request) => errorResponse(404, 'document_not_found', message: 'سند پیدا نشد.'),
         }),
       );
       await tapOn(tester, find.text('سندها (۲)'));
@@ -496,14 +495,22 @@ void main() {
                   },
                 },
               ),
-              2 => errorResponse(413, 'file_too_large', message: 'حجم فایل بیش از حد مجاز است.', extra: {'file_index': 0}),
+              2 => errorResponse(
+                413,
+                'file_too_large',
+                message: 'حجم فایل بیش از حد مجاز است.',
+                extra: {'file_index': 0},
+              ),
               _ => errorResponse(503, 'service_unavailable', message: 'سرور در دسترس نیست.'),
             };
           },
         }),
       );
       await tapOn(tester, find.text('سندها (۲)'));
-      app.files.toPick = [pickedFile('a.pdf', [1]), pickedFile('b.png', [2])];
+      app.files.toPick = [
+        pickedFile('a.pdf', [1]),
+        pickedFile('b.png', [2]),
+      ];
       await tapOn(tester, button('انتخاب فایل‌ها'));
       // Hidden from the customer this time.
       await tapOn(tester, find.byType(Checkbox).first);
@@ -521,7 +528,9 @@ void main() {
 
       // A failure that is not about a file leaves the selection ready for another attempt.
       await tapOn(tester, find.byTooltip('حذف a.pdf از فهرست'));
-      app.files.toPick = [pickedFile('c.pdf', [3])];
+      app.files.toPick = [
+        pickedFile('c.pdf', [3]),
+      ];
       await tapOn(tester, button('انتخاب فایل‌ها'));
       await tapOn(tester, button('بارگذاری ۱ فایل'));
       expect(find.text('سرور در دسترس نیست.'), findsOneWidget);
@@ -601,7 +610,9 @@ void main() {
       size: phoneSize,
       auth: adminAuthPayload(),
       location: '/shipments/s1',
-      routes: server.routes({'GET /companies': (request) => ok(pageOf([companyJson()]))}),
+      routes: server.routes({
+        'GET /companies': (request) => ok(pageOf([companyJson()])),
+      }),
     );
     expect(tester.takeException(), isNull);
     expect(find.text(code), findsOneWidget);
@@ -610,7 +621,9 @@ void main() {
     await tapOn(tester, find.text('سندها (۲)'));
     expect(find.byType(DataTable), findsNothing);
     expect(find.text('waybill.pdf'), findsOneWidget);
-    app.files.toPick = [pickedFile('a-very-long-name-of-a-scanned-document-2026-11-10.pdf', [1])];
+    app.files.toPick = [
+      pickedFile('a-very-long-name-of-a-scanned-document-2026-11-10.pdf', [1]),
+    ];
     await tapOn(tester, button('انتخاب فایل‌ها'));
     expect(tester.takeException(), isNull);
     await tapOn(tester, find.text('تاریخچهٔ کد رهگیری'));

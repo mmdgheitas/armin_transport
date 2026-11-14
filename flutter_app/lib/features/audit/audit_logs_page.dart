@@ -118,10 +118,7 @@ class _AuditLogsPageState extends ConsumerState<AuditLogsPage> {
                   ChoiceField<String>(
                     label: 'موجودیت',
                     value: _entityType,
-                    options: [
-                      (null, 'همه'),
-                      for (final entry in auditEntityLabels.entries) (entry.key, entry.value),
-                    ],
+                    options: [(null, 'همه'), for (final entry in auditEntityLabels.entries) (entry.key, entry.value)],
                     onChanged: (value) => setState(() => _entityType = value),
                   ),
                   JalaliDateField(

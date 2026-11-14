@@ -20,12 +20,15 @@ const String backAtTheForm = 'نشست مشاهدهٔ محموله به پایا
 /// Tests add what else they need and replace what is to go wrong.
 Map<String, RouteHandler> portal([Map<String, RouteHandler> more = const <String, RouteHandler>{}]) => {
   'POST /customer/lookup': (request) => (request.json as Map)['tracking_code'] == code
-      ? ok({'access_token': 'tok-1', 'expires_at': '2026-11-10T09:00:00Z', 'expires_in': 900}, message: 'محموله یافت شد.')
+      ? ok({
+          'access_token': 'tok-1',
+          'expires_at': '2026-11-10T09:00:00Z',
+          'expires_in': 900,
+        }, message: 'محموله یافت شد.')
       : errorResponse(404, 'tracking_code_not_found', message: notFound),
   'GET $access/shipment': (request) => ok(customerShipmentJson()),
-  'GET $access/documents': (request) => ok(
-    pageOf([customerDocumentJson(), customerDocumentJson(id: 'd2', name: 'invoice-2026.xlsx', size: 1536)]),
-  ),
+  'GET $access/documents': (request) =>
+      ok(pageOf([customerDocumentJson(), customerDocumentJson(id: 'd2', name: 'invoice-2026.xlsx', size: 1536)])),
   'POST $access/revoke': (request) => ok(null, message: 'نشست شما پایان یافت.'),
   ...more,
 };
@@ -129,9 +132,8 @@ void main() {
     await pumpApp(
       tester,
       routes: portal({
-        'GET $access/shipment': (request) => ok(
-          customerShipmentJson(status: 'ARCHIVED', description: null, documents: 0, details: const <Json>[]),
-        ),
+        'GET $access/shipment': (request) =>
+            ok(customerShipmentJson(status: 'ARCHIVED', description: null, documents: 0, details: const <Json>[])),
         'GET $access/documents': (request) => ok(pageOf(const <Json>[])),
       }),
     );
@@ -327,7 +329,8 @@ void main() {
       routes: portal({
         'GET $access/shipment': (request) => ok(
           customerShipmentJson(
-            description: 'دو پالت قطعات یدکی برای کارگاه مرکزی، تحویل در انبار شمارهٔ سه پس از هماهنگی تلفنی با مسئول انبار',
+            description:
+                'دو پالت قطعات یدکی برای کارگاه مرکزی، تحویل در انبار شمارهٔ سه پس از هماهنگی تلفنی با مسئول انبار',
           ),
         ),
         'GET $access/documents': (request) => ok(

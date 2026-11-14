@@ -206,10 +206,7 @@ class _ShipmentDetailPageState extends ConsumerState<ShipmentDetailPage> {
                 StatusBadge('کد ${shipment.codeTypeLabel}'),
               ],
             ),
-            if (actions.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(spacing: 8, runSpacing: 8, children: actions),
-            ],
+            if (actions.isNotEmpty) ...[const SizedBox(height: 12), Wrap(spacing: 8, runSpacing: 8, children: actions)],
             if (archived) ...[
               const SizedBox(height: 12),
               const Notice(

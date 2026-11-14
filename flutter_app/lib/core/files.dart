@@ -91,7 +91,9 @@ class PlatformFileGateway implements FileGateway {
       type: allowedExtensions.isEmpty ? FileType.any : FileType.custom,
       allowedExtensions: allowedExtensions.isEmpty ? null : allowedExtensions,
     );
-    return [for (final file in files) PickedFile(name: file.name, size: file.lengthSync(), readBytes: file.readAsBytes)];
+    return [
+      for (final file in files) PickedFile(name: file.name, size: file.lengthSync(), readBytes: file.readAsBytes),
+    ];
   }
 
   @override

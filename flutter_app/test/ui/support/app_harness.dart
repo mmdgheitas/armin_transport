@@ -142,10 +142,8 @@ Future<AppHarness> pumpApp(
 }
 
 /// Finds a button by its label, whatever kind of button it is.
-Finder button(String label) => find.ancestor(
-  of: find.text(label),
-  matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
-);
+Finder button(String label) =>
+    find.ancestor(of: find.text(label), matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton));
 
 /// Whether the button with [label] can be pressed.
 bool isEnabled(WidgetTester tester, String label) => tester.widget<ButtonStyleButton>(button(label)).enabled;
@@ -160,8 +158,10 @@ Finder fieldShell(String label, {Finder? within}) {
 }
 
 /// The text box of the form field labelled [label].
-Finder textBox(String label, {Finder? within}) =>
-    find.descendant(of: fieldShell(label, within: within), matching: find.byType(TextField));
+Finder textBox(String label, {Finder? within}) => find.descendant(
+  of: fieldShell(label, within: within),
+  matching: find.byType(TextField),
+);
 
 /// What the text box of the field labelled [label] holds.
 String textIn(WidgetTester tester, String label, {Finder? within}) =>

@@ -42,8 +42,7 @@ void main() {
     storage = MemoryAppStorage();
   });
 
-  AuthSession newSession([String suffix = '1']) =>
-      AuthSession.fromAuthResponse(authPayload(suffix), clock.now)!;
+  AuthSession newSession([String suffix = '1']) => AuthSession.fromAuthResponse(authPayload(suffix), clock.now)!;
 
   Future<AppSession> load({String compiledUrl = ''}) =>
       AppSession.load(storage, compiledUrl: compiledUrl, now: clock.call);
@@ -132,9 +131,7 @@ void main() {
     await app.settled;
     expect(storage.values, {serverStorageKey: 'https://other.test/api/v1'});
 
-    app.setServer(
-      'https://other.test/api/v1',
-    ); // the same address again changes nothing
+    app.setServer('https://other.test/api/v1'); // the same address again changes nothing
     expect(notifications, 1);
   });
 
@@ -169,34 +166,15 @@ void main() {
       'null',
       '[]',
       '{"server":"$server"}',
-      jsonEncode({
-        ...newSession().toStorageJson(),
-        'server': server,
-        'version': 2,
-      }),
-      jsonEncode({
-        ...newSession().toStorageJson(),
-        'server': server,
-        'refresh_token': '',
-      }),
-      jsonEncode({
-        ...newSession().toStorageJson(),
-        'server': server,
-        'user': <String, dynamic>{},
-      }),
-      jsonEncode({
-        ...newSession().toStorageJson(),
-        'server': server,
-        'access_expires_at': 'soon',
-      }),
+      jsonEncode({...newSession().toStorageJson(), 'server': server, 'version': 2}),
+      jsonEncode({...newSession().toStorageJson(), 'server': server, 'refresh_token': ''}),
+      jsonEncode({...newSession().toStorageJson(), 'server': server, 'user': <String, dynamic>{}}),
+      jsonEncode({...newSession().toStorageJson(), 'server': server, 'access_expires_at': 'soon'}),
     ]) {
       storage.values[sessionStorageKey] = unusable;
       expect((await load()).auth, isNull, reason: unusable);
     }
-    storage.values[sessionStorageKey] = jsonEncode({
-      ...newSession().toStorageJson(),
-      'server': server,
-    });
+    storage.values[sessionStorageKey] = jsonEncode({...newSession().toStorageJson(), 'server': server});
     expect((await load()).auth, isNotNull);
   });
 
@@ -208,11 +186,7 @@ void main() {
     var notifications = 0;
     app.addListener(() => notifications += 1);
 
-    final reason = ApiError(
-      status: 401,
-      code: 'token_revoked',
-      message: sessionEndedMessage,
-    );
+    final reason = ApiError(status: 401, code: 'token_revoked', message: sessionEndedMessage);
     app.end(reason);
     app.end(reason); // every request that was under way reports the same end
     expect(notifications, 1);
@@ -253,31 +227,23 @@ void main() {
       app.write(newSession('$generation'));
     }
     await app.settled;
-    final stored =
-        jsonDecode(storage.values[sessionStorageKey]!) as Map<String, dynamic>;
+    final stored = jsonDecode(storage.values[sessionStorageKey]!) as Map<String, dynamic>;
     expect(stored['access_token'], 'access-5');
     expect(stored['server'], server);
     expect(stored['version'], 1);
   });
 
-  test(
-    'keeps working in memory when the storage of the device fails',
-    () async {
-      final broken = BrokenStorage();
-      final app = await AppSession.load(
-        broken,
-        compiledUrl: '',
-        now: clock.call,
-      );
-      expect(app.serverUrl, isNull);
-      app.setServer(server);
-      app.write(newSession());
-      app.end();
-      app.write(newSession('2'));
-      await app.settled;
-      expect(app.serverUrl, server);
-      expect(app.auth!.accessToken, 'access-2');
-      expect(broken.attempts, greaterThan(4));
-    },
-  );
+  test('keeps working in memory when the storage of the device fails', () async {
+    final broken = BrokenStorage();
+    final app = await AppSession.load(broken, compiledUrl: '', now: clock.call);
+    expect(app.serverUrl, isNull);
+    app.setServer(server);
+    app.write(newSession());
+    app.end();
+    app.write(newSession('2'));
+    await app.settled;
+    expect(app.serverUrl, server);
+    expect(app.auth!.accessToken, 'access-2');
+    expect(broken.attempts, greaterThan(4));
+  });
 }

@@ -83,7 +83,11 @@ class PageHeader extends StatelessWidget {
               )
             : Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [Expanded(child: heading), const SizedBox(width: 16), buttons],
+                children: [
+                  Expanded(child: heading),
+                  const SizedBox(width: 16),
+                  buttons,
+                ],
               );
       },
     );
@@ -177,7 +181,9 @@ class KeyValueList extends StatelessWidget {
       children: [
         SizedBox(width: 150, child: labelText),
         const SizedBox(width: 12),
-        Expanded(child: Align(alignment: AlignmentDirectional.centerStart, child: content)),
+        Expanded(
+          child: Align(alignment: AlignmentDirectional.centerStart, child: content),
+        ),
       ],
     );
   }
@@ -195,7 +201,12 @@ class TrackingCodeText extends StatelessWidget {
     return Text(
       code,
       textDirection: TextDirection.ltr,
-      style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: AppColors.primaryDark),
+      style: TextStyle(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.6,
+        color: AppColors.primaryDark,
+      ),
     );
   }
 }

@@ -11,14 +11,24 @@ typedef Json = Map<String, dynamic>;
 Json asJson(Object? value) =>
     value is Map ? value.map<String, dynamic>((key, item) => MapEntry(key.toString(), item)) : <String, dynamic>{};
 
-List<Json> asJsonList(Object? value) => value is List ? [for (final item in value) if (item is Map) asJson(item)] : <Json>[];
+List<Json> asJsonList(Object? value) => value is List
+    ? [
+        for (final item in value)
+          if (item is Map) asJson(item),
+      ]
+    : <Json>[];
 
 String _text(Object? value, [String fallback = '']) => value is String ? value : fallback;
 String? _optionalText(Object? value) => value is String && value.isNotEmpty ? value : null;
 int _integer(Object? value, [int fallback = 0]) => value is int ? value : (value is num ? value.toInt() : fallback);
 bool _flag(Object? value, [bool fallback = false]) => value is bool ? value : fallback;
 DateTime? _instant(Object? value) => value is String ? DateTime.tryParse(value) : null;
-List<String> _texts(Object? value) => value is List ? [for (final item in value) if (item is String) item] : <String>[];
+List<String> _texts(Object? value) => value is List
+    ? [
+        for (final item in value)
+          if (item is String) item,
+      ]
+    : <String>[];
 
 // ---------------------------------------------------------------------------------------------- lists
 
@@ -46,10 +56,9 @@ class PageOf<T> {
 
   factory PageOf.fromJson(Object? data, T Function(Json json) convert) {
     final json = asJson(data);
-    return PageOf<T>(
-      [for (final item in asJsonList(json['items'])) convert(item)],
-      Pagination.fromJson(asJson(json['pagination'])),
-    );
+    return PageOf<T>([
+      for (final item in asJsonList(json['items'])) convert(item),
+    ], Pagination.fromJson(asJson(json['pagination'])));
   }
 
   final List<T> items;
@@ -535,7 +544,8 @@ class AuditLogEntry {
 class ActiveCount {
   const ActiveCount({this.total = 0, this.active = 0});
 
-  factory ActiveCount.fromJson(Json json) => ActiveCount(total: _integer(json['total']), active: _integer(json['active']));
+  factory ActiveCount.fromJson(Json json) =>
+      ActiveCount(total: _integer(json['total']), active: _integer(json['active']));
 
   final int total;
   final int active;
@@ -599,8 +609,11 @@ class CustomerGrant {
 class CustomerProductDetail {
   const CustomerProductDetail({required this.label, required this.dataType, this.value});
 
-  factory CustomerProductDetail.fromJson(Json json) =>
-      CustomerProductDetail(label: _text(json['label']), dataType: _text(json['data_type'], 'TEXT'), value: json['value']);
+  factory CustomerProductDetail.fromJson(Json json) => CustomerProductDetail(
+    label: _text(json['label']),
+    dataType: _text(json['data_type'], 'TEXT'),
+    value: json['value'],
+  );
 
   final String label;
   final String dataType;

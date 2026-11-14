@@ -91,14 +91,21 @@ void main() {
 
   test('exposes rate-limit details and keeps the session on 429 and 403', () async {
     final limited = ClientHarness(
-      (request) => errorResponse(429, 'rate_limited', message: 'تعداد درخواست‌ها بیش از حد مجاز است.', extra: {'retry_after_seconds': 42}),
+      (request) => errorResponse(
+        429,
+        'rate_limited',
+        message: 'تعداد درخواست‌ها بیش از حد مجاز است.',
+        extra: {'retry_after_seconds': 42},
+      ),
     );
     final tooMany = await errorOf(() => limited.api.get('/shipments'));
     expect(tooMany.retryAfterSeconds, 42);
     expect(tooMany.status, 429);
     expect(limited.session, isNotNull); // a rate limit never ends the session
 
-    final denied = ClientHarness((request) => errorResponse(403, 'permission_denied', message: 'اجازهٔ این کار را ندارید.'));
+    final denied = ClientHarness(
+      (request) => errorResponse(403, 'permission_denied', message: 'اجازهٔ این کار را ندارید.'),
+    );
     final forbidden = await errorOf(() => denied.api.get('/users'));
     expect(forbidden.isForbidden, isTrue);
     expect(denied.session, isNotNull);
@@ -205,18 +212,19 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 10));
         return ok(authPayload('2'));
       }
-      return request.authorization == 'Bearer access-2' ? ok({'path': request.path}) : errorResponse(401, 'token_expired');
+      return request.authorization == 'Bearer access-2'
+          ? ok({'path': request.path})
+          : errorResponse(401, 'token_expired');
     });
     harness.clock.advance(tokenLifetime); // expired locally: all five requests need a renewal first
-    final results = await Future.wait([for (final path in ['/a', '/b', '/c', '/d', '/e']) harness.api.get(path)]);
-    expect(refreshCalls, 1);
-    expect([for (final result in results) result.json['path']], [
-      '/api/v1/a',
-      '/api/v1/b',
-      '/api/v1/c',
-      '/api/v1/d',
-      '/api/v1/e',
+    final results = await Future.wait([
+      for (final path in ['/a', '/b', '/c', '/d', '/e']) harness.api.get(path),
     ]);
+    expect(refreshCalls, 1);
+    expect(
+      [for (final result in results) result.json['path']],
+      ['/api/v1/a', '/api/v1/b', '/api/v1/c', '/api/v1/d', '/api/v1/e'],
+    );
     final others = harness.calls.where((call) => !call.path.endsWith('/auth/refresh'));
     expect(others.every((call) => call.authorization == 'Bearer access-2'), isTrue);
   });
@@ -229,10 +237,14 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 10));
         return ok(authPayload('2'));
       }
-      return request.authorization == 'Bearer access-2' ? ok({'path': request.path}) : errorResponse(401, 'token_expired');
+      return request.authorization == 'Bearer access-2'
+          ? ok({'path': request.path})
+          : errorResponse(401, 'token_expired');
     });
     // The device believes the token is good, the server does not (for example after a clock change).
-    final results = await Future.wait([for (final path in ['/a', '/b', '/c']) harness.api.get(path)]);
+    final results = await Future.wait([
+      for (final path in ['/a', '/b', '/c']) harness.api.get(path),
+    ]);
     expect(refreshCalls, 1);
     expect(results, hasLength(3));
     expect(harness.ended, isEmpty);
@@ -318,7 +330,13 @@ void main() {
   });
 
   test('ends the session for revoked tokens and disabled accounts without trying to renew', () async {
-    for (final code in ['token_revoked', 'token_invalid', 'account_disabled', 'company_inactive', 'authentication_required']) {
+    for (final code in [
+      'token_revoked',
+      'token_invalid',
+      'account_disabled',
+      'company_inactive',
+      'authentication_required',
+    ]) {
       final harness = ClientHarness((request) => errorResponse(401, code, message: 'دسترسی ندارید.'));
       final error = await errorOf(() => harness.api.get('/shipments'));
       expect(error.code, code);
@@ -444,7 +462,9 @@ void main() {
       (request) => errorResponse(404, 'document_not_found', message: 'سند در دسترس نیست.'),
       signedIn: false,
     );
-    final error = await errorOf(() => customer.api.download('/customer/access/token/documents/d1/download', auth: false));
+    final error = await errorOf(
+      () => customer.api.download('/customer/access/token/documents/d1/download', auth: false),
+    );
     expect(error.isNotFound, isTrue);
     expect(error.message, 'سند در دسترس نیست.');
     expect(customer.calls.single.authorization, isNull);
@@ -515,7 +535,10 @@ void main() {
       filenameFromContentDisposition("attachment; filename=fallback.pdf; filename*=UTF-8''%E0%A4%A"),
       'fallback.pdf',
     );
-    expect(filenameFromContentDisposition("attachment; filename=fallback.pdf; filename*=UTF-8''%FF%FE"), 'fallback.pdf');
+    expect(
+      filenameFromContentDisposition("attachment; filename=fallback.pdf; filename*=UTF-8''%FF%FE"),
+      'fallback.pdf',
+    );
     expect(filenameFromContentDisposition(null), 'download');
     expect(filenameFromContentDisposition('attachment'), 'download');
     expect(filenameFromContentDisposition('attachment; filename=""'), 'download');

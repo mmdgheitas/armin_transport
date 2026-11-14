@@ -33,7 +33,10 @@ mixin FormSupport<W extends StatefulWidget> on State<W> {
 
   /// Runs [action] unless local validation found [problems]. Completes with `true` when the action succeeded;
   /// after a failure the messages are on screen.
-  Future<bool> runForm(Future<void> Function() action, {Map<String, String> problems = const <String, String>{}}) async {
+  Future<bool> runForm(
+    Future<void> Function() action, {
+    Map<String, String> problems = const <String, String>{},
+  }) async {
     if (busy) return false;
     if (problems.isNotEmpty) {
       setState(() {

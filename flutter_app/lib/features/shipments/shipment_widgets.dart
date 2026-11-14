@@ -99,7 +99,9 @@ class TabStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.border))),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(

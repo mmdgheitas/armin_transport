@@ -254,8 +254,14 @@ class _FieldDialogState extends ConsumerState<_FieldDialog> with FormSupport<_Fi
   int _nextOptionId = 0;
 
   @override
-  Set<String> get fieldNames =>
-      const {'label', 'field_key', 'data_type', 'display_order', 'options', 'validation_rules'};
+  Set<String> get fieldNames => const {
+    'label',
+    'field_key',
+    'data_type',
+    'display_order',
+    'options',
+    'validation_rules',
+  };
 
   /// What the server says about a single option or rule is shown below the list it belongs to.
   @override
@@ -367,7 +373,8 @@ class _FieldDialogState extends ConsumerState<_FieldDialog> with FormSupport<_Fi
     );
   }
 
-  Widget _problem(String message) => Text(message, style: const TextStyle(fontSize: 12, color: AppColors.danger, height: 1.5));
+  Widget _problem(String message) =>
+      Text(message, style: const TextStyle(fontSize: 12, color: AppColors.danger, height: 1.5));
 
   Widget _optionEditor() {
     final error = errors['options'];
@@ -443,10 +450,7 @@ class _FieldDialogState extends ConsumerState<_FieldDialog> with FormSupport<_Fi
           minColumnWidth: 230,
           children: [
             for (final definition in definitions)
-              if (definition.kind == 'text')
-                FullRow(child: _rule(definition))
-              else
-                _rule(definition),
+              if (definition.kind == 'text') FullRow(child: _rule(definition)) else _rule(definition),
           ],
         ),
         if (error != null) ...[const SizedBox(height: 6), _problem(error)],

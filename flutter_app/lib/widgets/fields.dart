@@ -11,7 +11,14 @@ import '../theme.dart';
 
 /// Label above, control in the middle, problem or hint below.
 class FieldShell extends StatelessWidget {
-  const FieldShell({super.key, required this.label, required this.child, this.isRequired = false, this.error, this.hint});
+  const FieldShell({
+    super.key,
+    required this.label,
+    required this.child,
+    this.isRequired = false,
+    this.error,
+    this.hint,
+  });
 
   final String label;
   final Widget child;
@@ -32,7 +39,13 @@ class FieldShell extends StatelessWidget {
         Text.rich(
           TextSpan(
             text: label,
-            children: [if (isRequired) const TextSpan(text: ' *', style: TextStyle(color: AppColors.danger))],
+            children: [
+              if (isRequired)
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: AppColors.danger),
+                ),
+            ],
           ),
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.text),
         ),
@@ -277,7 +290,10 @@ class ChoiceField<T> extends StatelessWidget {
         isExpanded: true,
         items: [
           for (final option in options)
-            DropdownMenuItem<T>(value: option.$1, child: Text(option.$2, overflow: TextOverflow.ellipsis)),
+            DropdownMenuItem<T>(
+              value: option.$1,
+              child: Text(option.$2, overflow: TextOverflow.ellipsis),
+            ),
         ],
         onChanged: enabled ? onChanged : null,
         decoration: InputDecoration(errorText: error, helperText: hint),
@@ -460,9 +476,14 @@ class _JalaliDateFieldState extends State<JalaliDateField> {
             initialValue: _month,
             isExpanded: true,
             items: [
-              const DropdownMenuItem<int>(child: Text('ماه', style: TextStyle(color: AppColors.muted))),
+              const DropdownMenuItem<int>(
+                child: Text('ماه', style: TextStyle(color: AppColors.muted)),
+              ),
               for (final (index, name) in jalaliMonthNames.indexed)
-                DropdownMenuItem<int>(value: index + 1, child: Text(name, overflow: TextOverflow.ellipsis)),
+                DropdownMenuItem<int>(
+                  value: index + 1,
+                  child: Text(name, overflow: TextOverflow.ellipsis),
+                ),
             ],
             onChanged: (month) {
               setState(() => _month = month);
@@ -507,7 +528,11 @@ class _JalaliDateFieldState extends State<JalaliDateField> {
               builder: (context, constraints) => constraints.maxWidth >= 440
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [Expanded(child: date), const SizedBox(width: 8), SizedBox(width: 132, child: time)],
+                      children: [
+                        Expanded(child: date),
+                        const SizedBox(width: 8),
+                        SizedBox(width: 132, child: time),
+                      ],
                     )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,

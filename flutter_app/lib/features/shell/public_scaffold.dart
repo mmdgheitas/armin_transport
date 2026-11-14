@@ -72,7 +72,9 @@ class PublicScaffold extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
-                  const Expanded(child: Align(alignment: AlignmentDirectional.centerStart, child: Brand())),
+                  const Expanded(
+                    child: Align(alignment: AlignmentDirectional.centerStart, child: Brand()),
+                  ),
                   if (action != null) ...[const SizedBox(width: 12), action],
                 ],
               ),

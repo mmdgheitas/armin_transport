@@ -27,10 +27,11 @@ Future<List<T>> loadAllPages<T>(
   return items;
 }
 
-Future<List<Company>> loadAllCompanies(ArminApi api, ClientSettings settings, {bool? isActive}) => loadAllPages<Company>(
-  (page, perPage) => api.companies(page: page, perPage: perPage, isActive: isActive),
-  settings: settings,
-);
+Future<List<Company>> loadAllCompanies(ArminApi api, ClientSettings settings, {bool? isActive}) =>
+    loadAllPages<Company>(
+      (page, perPage) => api.companies(page: page, perPage: perPage, isActive: isActive),
+      settings: settings,
+    );
 
 /// Every active goods field in display order: the form for the goods of a shipment.
 Future<List<ProductField>> loadActiveProductFields(ArminApi api, ClientSettings settings) => loadAllPages<ProductField>(

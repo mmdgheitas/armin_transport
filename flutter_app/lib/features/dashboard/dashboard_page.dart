@@ -17,6 +17,7 @@ import '../../theme.dart';
 import '../../widgets/async_block.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/layout.dart';
+
 // import '../../widgets/paged_table.dart';
 // import '../shipments/shipment_widgets.dart';
 
@@ -160,7 +161,10 @@ class _Stat extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(formatNumber(value), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, height: 1.4)),
+                  Text(
+                    formatNumber(value),
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, height: 1.4),
+                  ),
                   Text(label, style: const TextStyle(fontSize: 13, color: AppColors.muted, height: 1.5)),
                 ],
               ),
