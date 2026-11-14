@@ -8,7 +8,7 @@ from app.models.document import Document
 from app.models.enums import ProductFieldType, ShipmentStatus, TrackingCodeType, UserRole
 from app.models.product_field import ProductFieldDefinition, ShipmentProductValue
 from app.models.rate_limit import RateLimitCounter
-from app.models.shipment import Shipment, TrackingCodeHistory
+from app.models.shipment import Shipment, ShipmentAssignment, TrackingCodeHistory
 from app.models.user import User
 
 __all__ = [
@@ -21,6 +21,7 @@ __all__ = [
     "RateLimitCounter",
     "RefreshToken",
     "Shipment",
+    "ShipmentAssignment",
     "ShipmentProductValue",
     "ShipmentStatus",
     "TrackingCodeHistory",

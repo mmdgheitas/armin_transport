@@ -11,19 +11,21 @@ import 'package:material_ui/material_ui.dart';
 import 'core/api/api_error.dart';
 import 'core/providers.dart';
 import 'core/session.dart';
-import 'features/audit/audit_logs_page.dart';
+// import 'features/audit/audit_logs_page.dart';
+import 'features/transport/transport_page.dart';
 import 'features/auth/login_screen.dart';
-import 'features/companies/companies_page.dart';
-import 'features/dashboard/dashboard_page.dart';
-import 'features/product_fields/product_fields_page.dart';
-import 'features/profile/profile_page.dart';
+// import 'features/companies/companies_page.dart';
+// import 'features/companies/company_activity_page.dart';
+// import 'features/dashboard/dashboard_page.dart';
+// import 'features/product_fields/product_fields_page.dart';
+// import 'features/profile/profile_page.dart';
 import 'features/setup/setup_screen.dart';
 import 'features/shell/app_shell.dart';
-import 'features/shipments/shipment_detail_page.dart';
-import 'features/shipments/shipment_new_page.dart';
-import 'features/shipments/shipments_page.dart';
-import 'features/track/track_screen.dart';
-import 'features/users/users_page.dart';
+// import 'features/shipments/shipment_detail_page.dart';
+// import 'features/shipments/shipment_new_page.dart';
+// import 'features/shipments/shipments_page.dart';
+// import 'features/track/track_screen.dart';
+// import 'features/users/users_page.dart';
 import 'routing.dart';
 import 'theme.dart';
 
@@ -68,53 +70,74 @@ GoRoute _section(
 );
 
 /// The routes of the app. Who may go where is decided by [redirectFor].
+// Previous global shipments/activity navigation is intentionally commented out.
+// GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
+//   initialLocation: initialLocation ?? AppPaths.home,
+//   refreshListenable: app,
+//   redirect: (context, state) => redirectFor(
+//     state.uri,
+//     hasServer: app.serverUrl != null,
+//     serverIsFixed: app.serverIsFixed,
+//     signedIn: app.isSignedIn,
+//   ),
+//   errorBuilder: (context, state) => const NotFoundScreen(),
+//   routes: [
+//     // Never shown: the start location always leads on to the dashboard or to the tracking screen.
+//     GoRoute(path: AppPaths.home, builder: (context, state) => const Scaffold()),
+//     GoRoute(path: AppPaths.setup, builder: (context, state) => const SetupScreen()),
+//     GoRoute(path: AppPaths.track, builder: (context, state) => const TrackScreen()),
+//     GoRoute(path: AppPaths.login, builder: (context, state) => const LoginScreen()),
+//     ShellRoute(
+//       builder: (context, state, child) => AppShell(location: state.uri.path, child: child),
+//       routes: [
+//         _section(AppPaths.dashboard, 'dashboard:view', (state) => const DashboardPage()),
+//         _section(
+//           AppPaths.shipments,
+//           'shipment:view',
+//           (state) => const ShipmentsPage(),
+//           // These pages lie on top of the list, which is where "back" leads. "new" has to come first:
+//           // it would pass for an identifier.
+//           routes: [
+//             _section('new', 'shipment:create', (state) => const ShipmentNewPage()),
+//             _section(':id', 'shipment:view', (state) {
+//               final id = state.pathParameters['id'] ?? '';
+//               // The key makes another shipment another page, not new content for the page of the last one.
+//               return ShipmentDetailPage(key: ValueKey<String>(id), shipmentId: id);
+//             }),
+//           ],
+//         ),
+//         _section(AppPaths.companyActivity, 'company_activity:view', (state) => CompanyActivityPage(companyId: state.uri.queryParameters['company_id'])),
+//         _section(AppPaths.companies, 'company:view', (state) => const CompaniesPage()),
+//         _section(AppPaths.users, 'user:view', (state) {
+//           final companyId = state.uri.queryParameters['company_id'];
+//           // The location may name a company (the link from the list of companies). The key makes
+//           // that a page of its own, which starts with the filter set.
+//           return UsersPage(key: ValueKey<String>('users-${companyId ?? ''}'), companyId: companyId);
+//         }),
+//         _section(AppPaths.productFields, 'product_field:manage', (state) => const ProductFieldsPage()),
+//         _section(AppPaths.auditLogs, 'audit_log:view', (state) => const AuditLogsPage()),
+//         _section(AppPaths.profile, null, (state) => const ProfilePage()),
+//       ],
+//     ),
+//   ],
+// );
 GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
   initialLocation: initialLocation ?? AppPaths.home,
   refreshListenable: app,
-  redirect: (context, state) => redirectFor(
-    state.uri,
-    hasServer: app.serverUrl != null,
-    serverIsFixed: app.serverIsFixed,
-    signedIn: app.isSignedIn,
-  ),
+  redirect: (context, state) => redirectFor(state.uri, hasServer: app.serverUrl != null, serverIsFixed: app.serverIsFixed, signedIn: app.isSignedIn),
   errorBuilder: (context, state) => const NotFoundScreen(),
   routes: [
-    // Never shown: the start location always leads on to the dashboard or to the tracking screen.
     GoRoute(path: AppPaths.home, builder: (context, state) => const Scaffold()),
     GoRoute(path: AppPaths.setup, builder: (context, state) => const SetupScreen()),
-    GoRoute(path: AppPaths.track, builder: (context, state) => const TrackScreen()),
     GoRoute(path: AppPaths.login, builder: (context, state) => const LoginScreen()),
-    ShellRoute(
-      builder: (context, state, child) => AppShell(location: state.uri.path, child: child),
-      routes: [
-        _section(AppPaths.dashboard, 'dashboard:view', (state) => const DashboardPage()),
-        _section(
-          AppPaths.shipments,
-          'shipment:view',
-          (state) => const ShipmentsPage(),
-          // These pages lie on top of the list, which is where "back" leads. "new" has to come first:
-          // it would pass for an identifier.
-          routes: [
-            _section('new', 'shipment:create', (state) => const ShipmentNewPage()),
-            _section(':id', 'shipment:view', (state) {
-              final id = state.pathParameters['id'] ?? '';
-              // The key makes another shipment another page, not new content for the page of the last one.
-              return ShipmentDetailPage(key: ValueKey<String>(id), shipmentId: id);
-            }),
-          ],
-        ),
-        _section(AppPaths.companies, 'company:view', (state) => const CompaniesPage()),
-        _section(AppPaths.users, 'user:view', (state) {
-          final companyId = state.uri.queryParameters['company_id'];
-          // The location may name a company (the link from the list of companies). The key makes
-          // that a page of its own, which starts with the filter set.
-          return UsersPage(key: ValueKey<String>('users-${companyId ?? ''}'), companyId: companyId);
-        }),
-        _section(AppPaths.productFields, 'product_field:manage', (state) => const ProductFieldsPage()),
-        _section(AppPaths.auditLogs, 'audit_log:view', (state) => const AuditLogsPage()),
-        _section(AppPaths.profile, null, (state) => const ProfilePage()),
-      ],
-    ),
+    ShellRoute(builder: (context, state, child) => AppShell(location: state.uri.path, child: child), routes: [
+      _section('/dashboard', null, (state) => const TransportPage(view: 'home')),
+      _section('/transport', 'company:view', (state) => const TransportPage(view: 'transport')),
+      _section('/companies', 'company:create', (state) => const TransportPage(view: 'companies')),
+      _section('/companies/:companyId', 'company:view', (state) => TransportPage(key: ValueKey(state.uri.toString()), view: 'shipments', companyId: state.pathParameters['companyId'])),
+      _section('/employees', 'user:view', (state) => const TransportPage(view: 'employees')),
+      _section('/loads/:id', 'shipment:view', (state) => TransportPage(key: ValueKey(state.uri.toString()), view: 'detail', shipmentId: state.pathParameters['id'])),
+    ]),
   ],
 );
 

@@ -26,6 +26,7 @@ class Document(UUIDPrimaryKeyMixin, CreatedAtMixin, Model):
     uploaded_by: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True
     )
+    country: Mapped[str | None] = mapped_column(String(2))
     original_name: Mapped[str] = mapped_column(String(255), nullable=False)
     storage_name: Mapped[str] = mapped_column(String(255), nullable=False)
     storage_path: Mapped[str] = mapped_column(String(500), nullable=False)

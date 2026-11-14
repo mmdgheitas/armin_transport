@@ -19,7 +19,7 @@ def client_settings(settings: Settings) -> dict[str, Any]:
         "upload": {
             "max_file_size_bytes": settings.max_upload_size_bytes,
             "max_files_per_upload": settings.max_files_per_upload,
-            "allowed_extensions": sorted(settings.allowed_upload_extensions),
+            "allowed_extensions": [],
             "customer_visible_default": settings.document_customer_visible_default,
         },
         "tracking_code": {

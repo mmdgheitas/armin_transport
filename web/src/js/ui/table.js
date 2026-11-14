@@ -61,7 +61,7 @@ export function trackingCodeTypeLabel(type) {
 }
 
 export function roleLabel(role) {
-  return role === 'SUPER_ADMIN' ? 'مدیر مرکزی' : 'کارمند';
+  return role === 'SUPER_ADMIN' ? 'مدیر مرکزی' : role === 'CUSTOMER' ? 'مشتری' : 'کارمند';
 }
 
 /** A tracking code rendered left-to-right in a monospace face. */

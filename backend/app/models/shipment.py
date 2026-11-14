@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, Index, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.datetime_utils import utcnow
@@ -26,13 +26,18 @@ class Shipment(UUIDPrimaryKeyMixin, TimestampMixin, Model):
     )
 
     company_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("companies.id", ondelete="RESTRICT"), nullable=False)
-    tracking_code: Mapped[str] = mapped_column(String(64), nullable=False)
+    tracking_code: Mapped[str] = mapped_column(Text(collation="BINARY"), nullable=False)
     tracking_code_type: Mapped[TrackingCodeType] = mapped_column(
         enum_column(TrackingCodeType, "tracking_code_type"), nullable=False
     )
     created_by: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True
     )
+    transport_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
+    countries: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list, server_default="[]")
+    upload_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=12, server_default="12")
+    truck_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    border_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     description: Mapped[str | None] = mapped_column(Text)
     status: Mapped[ShipmentStatus] = mapped_column(
         enum_column(ShipmentStatus, "shipment_status"),
@@ -68,3 +73,11 @@ class TrackingCodeHistory(UUIDPrimaryKeyMixin, Model):
     changed_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False, default=utcnow)
 
     changer: Mapped[User] = relationship(lazy="joined", foreign_keys=[changed_by])
+
+
+class ShipmentAssignment(Model):
+    __tablename__ = "shipment_assignments"
+    __table_args__ = (TABLE_OPTIONS,)
+    shipment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("shipments.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), primary_key=True)
+    user: Mapped[User] = relationship(lazy="joined")

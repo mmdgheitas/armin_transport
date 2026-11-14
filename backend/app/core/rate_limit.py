@@ -1,6 +1,6 @@
 """Database-backed fixed-window rate limiter.
 
-Counters live in MySQL so limits are shared by all application workers without
+Counters live in SQLite (or the optional MySQL backend) so limits are shared by all application workers without
 an additional service (e.g. Redis). Every operation runs in its own short
 transaction on a dedicated connection, so a hit is recorded even when the
 surrounding request fails or rolls back. If the counter cannot be updated the
@@ -79,7 +79,7 @@ class RateLimiter:
         table = table_of(RateLimitCounter)
         if engine.dialect.name == "mysql":
             return mysql_insert(table).values(**values).on_duplicate_key_update(count=table.c.count + 1)
-        if engine.dialect.name == "sqlite":  # test fallback
+        if engine.dialect.name == "sqlite":
             return (
                 sqlite_insert(table)
                 .values(**values)

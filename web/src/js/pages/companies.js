@@ -1,8 +1,9 @@
+import { actionLabel } from './audit-logs.js';
 import { h, icon, ltr } from '../core/dom.js';
 import { formatDateTime, formatNumber } from '../core/format.js';
 import { openModal } from '../ui/dialog.js';
 import { alertBox, emptyBlock, toast } from '../ui/feedback.js';
-import { buildForm, checkboxField, filterPanel, requiredProblems, selectField, textField } from '../ui/forms.js';
+import { buildForm, checkboxField, filterPanel, passwordField, requiredProblems, selectField, textField } from '../ui/forms.js';
 import { pageHeader } from '../ui/layout.js';
 import { activeBadge, dataTable, iconButton, paginationBar } from '../ui/table.js';
 import { asyncBlock, loadListPage } from './shared.js';
@@ -11,6 +12,10 @@ function companyForm({ api, session, company = null, onSaved, close }) {
   const isNew = company === null;
   const canSetActive = isNew || session.can('company:set_active');
   const fields = {
+    ...(isNew ? {
+      username: textField({ label: 'نام کاربری شرکت', required: true, dir: 'ltr', autocomplete: 'off', maxlength: 100 }),
+      password: passwordField({ label: 'رمز عبور شرکت', autocomplete: 'new-password', hint: `رمز قوی با حداقل ${formatNumber(session.appSettings.password?.min_length ?? 10)} نویسه وارد کنید.` }),
+    } : {}),
     name: textField({ label: 'نام شرکت', value: company?.name ?? '', required: true, maxlength: 200 }),
     company_code: textField({
       label: 'کد شرکت',
@@ -26,7 +31,7 @@ function companyForm({ api, session, company = null, onSaved, close }) {
     is_active: checkboxField({
       label: 'شرکت فعال است',
       checked: company?.is_active ?? true,
-      hint: 'با غیرفعال شدن شرکت، کارمندان آن دیگر نمی‌توانند وارد سامانه شوند.',
+      hint: 'با غیرفعال شدن شرکت، ورود حساب شرکت مسدود می‌شود.',
     }),
   };
   if (!canSetActive) delete fields.is_active;
@@ -35,9 +40,10 @@ function companyForm({ api, session, company = null, onSaved, close }) {
     submitLabel: isNew ? 'ایجاد شرکت' : 'ذخیرهٔ تغییرات',
     cancelLabel: 'انصراف',
     onCancel: close,
-    validate: (values) => requiredProblems(values, { name: 'نام شرکت را وارد کنید.', company_code: 'کد شرکت را وارد کنید.' }),
+    validate: (values) => requiredProblems(values, { name: 'نام شرکت را وارد کنید.', company_code: 'کد شرکت را وارد کنید.', ...(isNew ? { username: 'نام کاربری شرکت را وارد کنید.', password: 'رمز عبور شرکت را وارد کنید.' } : {}) }),
     async onSubmit(values) {
       const payload = {
+        ...(isNew ? { username: values.username.trim(), password: values.password } : {}),
         name: values.name.trim(),
         company_code: values.company_code.trim(),
         phone: values.phone.trim() === '' ? null : values.phone.trim(),
@@ -71,7 +77,7 @@ export function companiesPage(ctx) {
     body.append(form.element);
     try {
       const { data } = await api.get(`/companies/${company.id}`, { signal: ctx.signal });
-      body.prepend(alertBox('info', `${formatNumber(data.employee_count)} کارمند و ${formatNumber(data.shipment_count)} محموله برای این شرکت ثبت شده است.`));
+      body.prepend(alertBox('info', `${formatNumber(data.shipment_count)} محموله برای این شرکت ثبت شده است. حساب شرکت از بخش کاربران قابل مدیریت است.`));
     } catch {
       // The counters are informational; the form works without them.
     }
@@ -112,7 +118,8 @@ export function companiesPage(ctx) {
               rowKey: (company) => company.id,
               rows: data.items,
               columns: [
-                { header: 'نام شرکت', cell: (company) => h('strong', {}, company.name) },
+                { header: 'نام شرکت', cell: (company) => h('a', { href: `#/shipments?company_id=${company.id}&status=ACTIVE` }, company.name) },
+                { header: 'آخرین فعالیت', cell: (company) => company.last_activity ? `${actionLabel(company.last_activity.action)} · ${company.last_activity.user?.full_name ?? 'سامانه'} · ${formatDateTime(company.last_activity.created_at)}` : '—' },
                 { header: 'کد', cell: (company) => ltr(company.company_code, 'code') },
                 { header: 'تلفن', className: 'hide-mobile', cell: (company) => (company.phone ? ltr(company.phone) : '—') },
                 { header: 'وضعیت', cell: (company) => activeBadge(company.is_active) },
@@ -124,11 +131,11 @@ export function companiesPage(ctx) {
                       'div',
                       { class: 'actions' },
                       // The caption is hidden on a phone, so the name is given explicitly; it also tells the links of the rows apart.
-                      h(
+                      session.can('company_activity:view') && h(
                         'a',
-                        { class: 'btn btn-ghost btn-sm', href: `#/users?company_id=${company.id}`, 'aria-label': `کارمندان ${company.name}`, title: `کارمندان ${company.name}` },
+                        { class: 'btn btn-ghost btn-sm', href: `#/company-activity?company_id=${company.id}`, 'aria-label': `سابقهٔ فعالیت ${company.name}`, title: `سابقهٔ فعالیت ${company.name}` },
                         icon('users', { size: 16 }),
-                        h('span', { class: 'hide-mobile' }, 'کارمندان'),
+                        h('span', { class: 'hide-mobile' }, 'سابقهٔ فعالیت'),
                       ),
                       canUpdate && iconButton({ iconName: 'edit', label: `ویرایش ${company.name}`, onClick: () => openEdit(company) }),
                     ),

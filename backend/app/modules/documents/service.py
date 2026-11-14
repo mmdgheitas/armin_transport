@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, BinaryIO
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, scoped_session
 
 from app.config import Settings
@@ -27,6 +28,7 @@ from app.core.pagination import Page
 from app.core.text import fa_number
 from app.core.transactions import unit_of_work
 from app.models import Document
+from app.models.enums import UserRole
 from app.modules.audit_logs.service import AuditService
 from app.modules.documents.repository import DocumentRepository
 from app.modules.documents.scanner import MalwareDetectedError, MalwareScanner, ScannerUnavailableError
@@ -34,12 +36,9 @@ from app.modules.documents.storage import DocumentStorage, StorageError, StoredF
 from app.modules.documents.validation import (
     FileType,
     UploadRejectedError,
-    check_declared_mime_type,
     copy_with_limit,
-    resolve_file_type,
     sanitize_filename,
     sha256_of_stream,
-    verify_content,
 )
 from app.modules.shipments.service import ShipmentService
 
@@ -100,24 +99,22 @@ class DocumentService:
         document = self._documents.get_scoped(
             document_id, self._shipments.scope_company_id(actor), for_update=for_update
         )
-        if document is None:
+        if document is None or (actor.role is UserRole.EMPLOYEE and document.uploaded_by != actor.user_id):
             raise NotFoundError("سند موردنظر یافت نشد.")
+        if document.shipment.transport_enabled:
+            self._shipments.get_entity(actor, document.shipment_id)
         return document
 
     def _stage(self, incoming: IncomingFile) -> StagedUpload:
         """Run the complete validation pipeline for one file."""
         original_name = sanitize_filename(incoming.filename)
-        file_type = resolve_file_type(original_name, self._settings.allowed_upload_extensions)
-        allowed_mime_types = self._settings.allowed_upload_mime_types
-        if allowed_mime_types is not None and file_type.mime_type not in allowed_mime_types:
-            raise UploadRejectedError("file_type_not_allowed", "نوع این فایل مجاز نیست.")
-        check_declared_mime_type(file_type, incoming.content_type)
+        extension = Path(original_name).suffix.lstrip(".").lower()[:20]
+        file_type = FileType(extension, "application/octet-stream", frozenset(), lambda path: True)
 
         handle, temp_path = self._storage.create_temp_file()
         try:
             with handle:
                 size, checksum = copy_with_limit(incoming.stream, handle, self._settings.max_upload_size_bytes)
-            verify_content(file_type, temp_path)
             self._scan(temp_path)
         except BaseException:
             self._storage.discard_temp(temp_path)
@@ -145,7 +142,9 @@ class DocumentService:
     # ------------------------------------------------------------------ queries
     def list_for_shipment(self, actor: Actor, shipment_id: uuid.UUID, page: int, per_page: int) -> Page[Document]:
         shipment = self._shipments.get_entity(actor, shipment_id)
-        return self._documents.list_for_shipment(shipment.id, page, per_page)
+        return self._documents.list_for_shipment(
+            shipment.id, page, per_page, uploaded_by=actor.user_id if actor.role is UserRole.EMPLOYEE else None
+        )
 
     def open_content(self, document: Document) -> DocumentContent:
         """Open a stored file and verify size and checksum before it is served."""
@@ -187,24 +186,33 @@ class DocumentService:
         return content
 
     # ------------------------------------------------------------------ commands
-    def upload(
+    def upload(  # noqa: PLR0912 - atomic staging, authorization and compensation pipeline
         self,
         actor: Actor,
         shipment_id: uuid.UUID,
         files: Sequence[IncomingFile],
         customer_visible: bool | None = None,
+        country: str | None = None,
     ) -> list[Document]:
         """Validate and store all files, or none of them."""
         shipment = self._shipments.get_entity(actor, shipment_id)
         self._shipments.ensure_writable(shipment)
+        if shipment.transport_enabled:
+            if actor.role is UserRole.EMPLOYEE:
+                from app.models import User  # noqa: PLC0415
+
+                user = self._session.get(User, actor.user_id)
+                country = user.country if user else None
+            if country not in shipment.countries:
+                raise ValidationFailedError.single("country", "کشور مجاز بار را انتخاب کنید.")
         if not files:
             raise ValidationFailedError.single("files", "هیچ فایلی برای بارگذاری ارسال نشده است.", code="no_files")
-        maximum = self._settings.max_files_per_upload
+        maximum = shipment.upload_limit if shipment.transport_enabled else self._settings.max_files_per_upload
         if len(files) > maximum:
             raise ValidationFailedError.single(
                 "files", f"در هر درخواست حداکثر {fa_number(maximum)} فایل قابل بارگذاری است.", code="too_many_files"
             )
-        visible = self._settings.document_customer_visible_default if customer_visible is None else customer_visible
+        visible = True
 
         staged: list[StagedUpload] = []
         committed_paths: list[str] = []
@@ -224,12 +232,34 @@ class DocumentService:
 
             documents: list[Document] = []
             with unit_of_work(self._session):
+                # Serialize quota checks on the shipment row, including concurrent uploads.
+                self._shipments.get_entity(actor, shipment_id, for_update=True)
+                if actor.role is UserRole.EMPLOYEE or shipment.transport_enabled:
+                    count = (
+                        self._session.scalar(
+                            select(func.count())
+                            .select_from(Document)
+                            .where(
+                                Document.shipment_id == shipment_id,
+                                Document.uploaded_by == actor.user_id,
+                                Document.deleted_at.is_(None),
+                                *([Document.country == country] if shipment.transport_enabled else []),
+                            )
+                        )
+                        or 0
+                    )
+                    limit = shipment.upload_limit if shipment.transport_enabled else 12
+                    if count + len(staged) > limit:
+                        raise ValidationFailedError.single(
+                            "files", f"سقف فایل‌های این بار برای شما {limit} فایل است.", code="employee_file_quota"
+                        )
                 for item in staged:
                     storage_name = self._storage.new_storage_name()
                     storage_path = self._storage.commit(item.temp_path, storage_name)
                     committed_paths.append(storage_path)
                     document = Document(
                         shipment_id=shipment_id,
+                        country=country,
                         uploaded_by=actor.user_id,
                         original_name=item.original_name,
                         storage_name=storage_name,
@@ -268,6 +298,7 @@ class DocumentService:
                 self._storage.discard_temp(item.temp_path)
 
     def set_customer_visibility(self, actor: Actor, document_id: uuid.UUID, visible: bool) -> Document:
+        visible = True  # Customer access to shipment files cannot be disabled.
         with unit_of_work(self._session):
             document = self._get(actor, document_id, for_update=True)
             self._shipments.ensure_writable(document.shipment)

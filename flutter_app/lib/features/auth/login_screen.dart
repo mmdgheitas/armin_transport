@@ -2,7 +2,6 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/config.dart';
@@ -74,11 +73,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with FormSupport<Logi
     final server = ServerAddress.parse(app.serverUrl ?? '').displayHost;
     return PublicScaffold(
       maxWidth: 440,
-      action: OutlinedButton.icon(
-        onPressed: () => context.go(AppPaths.track),
-        icon: const Icon(Icons.search, size: 18),
-        label: const Text('رهگیری محموله'),
-      ),
       children: [
         Card(
           child: Padding(
@@ -87,7 +81,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with FormSupport<Logi
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('ورود کارکنان', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                  const Text('ورود به پنل کاربری', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 6),
                   const Text(
                     'برای ورود به پنل مدیریت محموله‌ها، نام کاربری و رمز عبور خود را وارد کنید.',
@@ -130,11 +124,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with FormSupport<Logi
           alignment: WrapAlignment.center,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            const Text('مشتری هستید؟', style: TextStyle(fontSize: 13, color: AppColors.muted)),
-            TextButton(
-              onPressed: () => context.go(AppPaths.track),
-              child: const Text('محمولهٔ خود را با کد رهگیری پیدا کنید.'),
-            ),
+            const Text('برای مشاهدهٔ محموله‌ها وارد حساب شرکت شوید.'),
           ],
         ),
         if (server.isNotEmpty) ServerLine(host: server, canChange: !app.serverIsFixed),

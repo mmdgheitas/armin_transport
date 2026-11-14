@@ -85,7 +85,7 @@ export function startApp(root) {
     const isAuthenticated = session.isAuthenticated();
 
     if (path === '/') {
-      navigate(isAuthenticated ? '#/dashboard' : '#/track', { replace: true });
+      navigate(isAuthenticated ? '#/dashboard' : '#/login', { replace: true });
       return;
     }
 
@@ -96,7 +96,7 @@ export function startApp(root) {
         element: emptyBlock({
           iconName: 'alert',
           title: 'صفحهٔ موردنظر یافت نشد.',
-          action: h('a', { class: 'btn', href: isAuthenticated ? '#/dashboard' : '#/track' }, 'بازگشت به صفحهٔ اصلی'),
+          action: h('a', { class: 'btn', href: isAuthenticated ? '#/dashboard' : '#/login' }, 'بازگشت به صفحهٔ اصلی'),
         }),
       };
       showPage(isAuthenticated ? { navPath: null } : { layout: 'public' }, notFound, path);
