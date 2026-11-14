@@ -14,7 +14,7 @@ const HISTORY = 'تاریخچهٔ کد رهگیری';
 
 const writes = (ui, urlPart) => ui.requests(urlPart).filter((request) => request.method !== 'GET');
 
-/** Registers a shipment of «حمل‌ونقل » through the API. */
+/** Registers a shipment of the first demo company («حمل‌ونقل», ARMIN) through the API. */
 async function registerShipment(description) {
   const token = await app.api.login('armin.operator');
   const shipment = await app.api.call('POST', '/shipments', { token, json: { description, product_values: { product_name: description } } });
@@ -83,7 +83,7 @@ app.scenario('an employee registers a shipment with its goods details', async (u
   await ui.waitForText('مقادیر ثبت‌شده برای این محموله');
 
   const shown = await ui.definitions();
-  assert.equal(shown['شرکت'], 'حمل‌ونقل ');
+  assert.equal(shown['شرکت'], 'حمل‌ونقل');
   assert.equal(shown['ثبت‌کننده'], 'سارا محمدی');
   assert.equal(shown['تعداد سندها'], '۰');
   assert.equal(shown['توضیحات'], 'دستگاه برش لیزری - مقصد اصفهان');

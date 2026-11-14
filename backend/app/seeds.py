@@ -19,7 +19,7 @@ DEMO_ADMIN_USERNAME = "admin"
 
 _COMPANIES: list[dict[str, Any]] = [
     {
-        "name": "حمل‌ونقل ",
+        "name": "حمل‌ونقل",
         "company_code": "ARMIN",
         "phone": "021-55550101",
         "address": "تهران، خیابان آزادی، پلاک ۱۲",
