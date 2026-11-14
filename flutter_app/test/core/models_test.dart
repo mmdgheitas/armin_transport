@@ -12,7 +12,7 @@ const Json shipmentJson = {
   'company_id': 'c1',
   'company': {
     'id': 'c1',
-    'name': 'حمل‌ونقل ',
+    'name': 'حمل‌ونقل',
     'company_code': 'ARMIN',
     'is_active': true,
   },
@@ -162,7 +162,7 @@ void main() {
     expect(shipment.statusLabel, 'فعال');
     expect(shipment.codeTypeLabel, 'خودکار');
     expect(shipment.description, 'دو پالت لوازم خانگی');
-    expect(shipment.company!.name, 'حمل‌ونقل ');
+    expect(shipment.company!.name, 'حمل‌ونقل');
     expect(shipment.createdBy!.fullName, 'سارا محمدی');
     expect(shipment.createdBy!.username, isNull);
     expect(shipment.documentCount, 3);
@@ -341,7 +341,7 @@ void main() {
       'scope': 'COMPANY',
       'company': {
         'id': 'c1',
-        'name': 'حمل‌ونقل ',
+        'name': 'حمل‌ونقل',
         'company_code': 'ARMIN',
         'is_active': true,
       },
@@ -352,7 +352,7 @@ void main() {
       'recent_shipments': <Object>[],
     });
     expect(own.isGlobal, isFalse);
-    expect(own.company!.name, 'حمل‌ونقل ');
+    expect(own.company!.name, 'حمل‌ونقل');
     expect(own.companies, isNull);
     expect(own.employees, isNull);
   });
@@ -369,7 +369,7 @@ void main() {
     final shipment = CustomerShipment.fromJson({
       'tracking_code': 'ARMN-7K2P-9QXD-4M8T',
       'status': 'ACTIVE',
-      'company_name': 'حمل‌ونقل ',
+      'company_name': 'حمل‌ونقل',
       'description': null,
       'registered_at': '2026-11-10T08:30:00Z',
       'document_count': 2,
@@ -379,7 +379,7 @@ void main() {
       ],
       'session_expires_at': '2026-11-10T09:00:00Z',
     });
-    expect(shipment.companyName, 'حمل‌ونقل ');
+    expect(shipment.companyName, 'حمل‌ونقل');
     expect(shipment.description, isNull);
     expect(shipment.documentCount, 2);
     expect(shipment.productDetails.map((detail) => detail.label), [
@@ -404,7 +404,7 @@ void main() {
   test('reads companies and users', () {
     final company = Company.fromJson({
       'id': 'c1',
-      'name': 'حمل‌ونقل ',
+      'name': 'حمل‌ونقل',
       'company_code': 'ARMIN',
       'phone': '02112345678',
       'address': null,

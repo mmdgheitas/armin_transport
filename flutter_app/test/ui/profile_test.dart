@@ -16,7 +16,7 @@ void main() {
     expect(onPage(find.text('سارا محمدی')), findsOneWidget);
     expect(onPage(find.text('armin.operator')), findsOneWidget);
     expect(onPage(find.text('کارمند')), findsOneWidget);
-    expect(onPage(find.text('حمل‌ونقل ')), findsOneWidget);
+    expect(onPage(find.text('حمل‌ونقل')), findsOneWidget);
     expect(
       find.text('دست‌کم ۱۰ نویسه؛ نباید شامل نام کاربری باشد.'),
       findsOneWidget,

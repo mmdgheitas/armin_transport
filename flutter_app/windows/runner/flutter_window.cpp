@@ -5,7 +5,8 @@
 #include "flutter/generated_plugin_registrant.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
-    : project_(project) {}
+    : project_(project),
+      activate_message_(::RegisterWindowMessageW(kActivateMessageName)) {}
 
 FlutterWindow::~FlutterWindow() {}
 
@@ -51,6 +52,15 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  // The program was started a second time: show this window instead.
+  if (activate_message_ != 0 && message == activate_message_) {
+    if (::IsIconic(hwnd)) {
+      ::ShowWindow(hwnd, SW_RESTORE);
+    }
+    ::SetForegroundWindow(hwnd);
+    return 0;
+  }
+
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =

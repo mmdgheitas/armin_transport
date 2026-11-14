@@ -5,7 +5,11 @@
 #   - on main and on version tags (v1.2.0),
 #   - when the workflow is started by hand,
 #   - on any other branch when the commit message contains "[build]".
-# A version tag also publishes the builds as a GitHub release.
+# A build does not wait for the tests: it is there to try the app out, also while a test still
+# fails. A version tag publishes the builds as a GitHub release, and that needs everything green.
+#
+# The analyzer fails the check for errors and warnings. Its hints (style) do not fail it; they are
+# attached to the commit as a check run named "diag:flutter:analyze.txt".
 #
 # Optional settings of the repository (Settings > Secrets and variables > Actions):
 #   variables  API_BASE_URL    the server address compiled into the app; without it the app asks on first start
@@ -58,23 +62,37 @@ jobs:
           set -o pipefail
           # The lock file is committed: the versions in it are the ones that were tested.
           flutter pub get --enforce-lockfile 2>&1 | tee "$RUNNER_TEMP/out/pub-get.txt"
+      - name: Format (one-off; the formatted sources are attached for the commit that follows)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          dart format lib test | tail -n 3 || true
+          git status --short . | wc -l
+          tar czf - lib test | base64 -w 76 > "$RUNNER_TEMP/formatted.b64"
+          node ../tools/ci/publish-check.mjs format "$RUNNER_TEMP/formatted.b64"
       - name: Analyze
         id: analyze
         continue-on-error: true
         run: |
           set -o pipefail
-          flutter analyze --no-pub 2>&1 | tee "$RUNNER_TEMP/out/analyze.txt"
+          flutter analyze --no-pub --no-fatal-infos 2>&1 | tee "$RUNNER_TEMP/out/analyze.txt"
       - name: Test
         id: test
         continue-on-error: true
         run: |
           set -o pipefail
           flutter test --no-pub --reporter expanded 2>&1 | tee "$RUNNER_TEMP/out/test.txt"
-      - name: Attach the output of what failed
-        if: always() && (failure() || steps.analyze.outcome == 'failure' || steps.test.outcome == 'failure')
+      - name: Attach the output of what failed and the hints of the analyzer
+        if: always()
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: node ../tools/ci/publish-check.mjs flutter "$RUNNER_TEMP"/out/*.txt
+          FAILED: ${{ job.status != 'success' || steps.analyze.outcome != 'success' || steps.test.outcome != 'success' }}
+        run: |
+          if [ "$FAILED" = "true" ]; then
+            node ../tools/ci/publish-check.mjs flutter "$RUNNER_TEMP"/out/*.txt
+          elif grep -q ' • ' "$RUNNER_TEMP/out/analyze.txt"; then
+            node ../tools/ci/publish-check.mjs flutter "$RUNNER_TEMP/out/analyze.txt"
+          fi
       - name: Report the result
         if: steps.analyze.outcome != 'success' || steps.test.outcome != 'success'
         run: |
@@ -83,7 +101,6 @@ jobs:
 
   android:
     name: Android APK
-    needs: check
     if: >-
       github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' ||
       startsWith(github.ref, 'refs/tags/v') || contains(github.event.head_commit.message, '[build]')
@@ -148,7 +165,6 @@ jobs:
 
   windows:
     name: Windows program
-    needs: check
     if: >-
       github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' ||
       startsWith(github.ref, 'refs/tags/v') || contains(github.event.head_commit.message, '[build]')
@@ -200,7 +216,7 @@ jobs:
 
   release:
     name: Publish the release
-    needs: [android, windows]
+    needs: [check, android, windows]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 10

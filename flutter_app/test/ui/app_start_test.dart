@@ -1,4 +1,5 @@
 import 'package:armin_transport/core/api/models.dart';
+import 'package:armin_transport/routing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -51,7 +52,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'https://other.example');
     await tester.tap(button('بررسی و ادامه'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('سرور حمل‌ونقل  پاسخ نداد'), findsOneWidget);
+    expect(find.textContaining('سرور حمل‌ونقل پاسخ نداد'), findsOneWidget);
     expect(app.session.serverUrl, isNull);
   });
 
@@ -140,10 +141,12 @@ void main() {
       containsAll(<String>['GET /auth/me', 'GET /dashboard/summary']),
     );
     expect(find.text('سارا محمدی، خوش آمدید'), findsOneWidget);
+    expect(find.text('خلاصهٔ وضعیت حمل‌ونقل'), findsOneWidget);
+    // The four numbers of the company.
     expect(find.text('۱٬۲۸۴'), findsOneWidget);
-    expect(find.text('کل محموله‌ها'), findsOneWidget);
-    expect(find.text('ARMN-7K2M-9QXD-4T8B'), findsOneWidget);
-    expect(find.text('بایگانی‌شده'), findsOneWidget);
+    for (final label in ['کل محموله‌ها', 'محموله‌های فعال', 'محموله‌های بایگانی‌شده', 'سندهای بارگذاری‌شده']) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
     // An employee sees the sections of the own company only.
     expect(find.text('محموله‌ها'), findsOneWidget);
     expect(find.text('شرکت‌ها'), findsNothing);
@@ -151,32 +154,22 @@ void main() {
     expect(find.text('گزارش رویدادها'), findsNothing);
   });
 
-  testWidgets(
-    'the central administrator sees every section and the numbers of all companies',
-    (tester) async {
-      await pumpApp(
-        tester,
-        auth: adminAuthPayload(),
-        routes: {
-          'GET /dashboard/summary': (request) =>
-              ok(dashboardJson(global: true)),
-        },
-      );
-      expect(find.text('خلاصهٔ وضعیت همهٔ شرکت‌ها'), findsOneWidget);
-      for (final section in [
-        'داشبورد',
-        'محموله‌ها',
-        'شرکت‌ها',
-        'کاربران',
-        'فیلدهای محموله',
-        'گزارش رویدادها',
-      ]) {
-        expect(find.text(section), findsWidgets, reason: section);
-      }
-      expect(find.text('شرکت فعال از ۷ شرکت'), findsOneWidget);
-      expect(find.text('کارمند فعال از ۳۱ کارمند'), findsOneWidget);
-    },
-  );
+  testWidgets('the central administrator sees the numbers and the sections of all companies', (tester) async {
+    await pumpApp(
+      tester,
+      auth: adminAuthPayload(),
+      routes: {'GET /dashboard/summary': (request) => ok(dashboardJson(global: true))},
+    );
+    expect(find.text('خلاصهٔ وضعیت همهٔ شرکت‌ها'), findsOneWidget);
+    expect(find.text('کل محموله‌ها'), findsOneWidget);
+    for (final section in ['داشبورد', 'محموله‌ها', 'شرکت‌ها', 'کاربران']) {
+      expect(find.text(section), findsWidgets, reason: section);
+    }
+    // The administrator holds every permission, so every entry of the navigation is offered.
+    for (final entry in navEntries) {
+      expect(find.text(entry.label), findsWidgets, reason: entry.path);
+    }
+  });
 
   testWidgets(
     'the dashboard offers a retry when the server cannot be reached',
@@ -203,7 +196,8 @@ void main() {
       await tester.tap(button('تلاش دوباره'));
       await tester.pumpAndSettle();
       expect(attempts, 2);
-      expect(find.text('هنوز محموله‌ای ثبت نشده است.'), findsOneWidget);
+      expect(find.text('سرور در دسترس نیست.'), findsNothing);
+      expect(find.text('کل محموله‌ها'), findsOneWidget);
     },
   );
 

@@ -378,17 +378,17 @@ void main() {
   test('manages companies', () async {
     const company = {
       'id': 'c1',
-      'name': 'حمل‌ونقل ',
+      'name': 'حمل‌ونقل',
       'company_code': 'ARMIN',
       'employee_count': 4,
     };
     final list = apiAnswering(pageOf([company]));
-    await list.$1.companies(page: 2, perPage: 100, search: '', isActive: true);
+    await list.$1.companies(page: 2, perPage: 100, search: 'حمل‌ونقل', isActive: true);
     expect(list.$2.calls.single.path, '/api/v1/companies');
     expect(list.$2.calls.single.query, {
       'page': '2',
       'per_page': '100',
-      'q': '',
+      'q': 'حمل‌ونقل',
       'is_active': 'true',
     });
     await list.$1.companies(isActive: false);

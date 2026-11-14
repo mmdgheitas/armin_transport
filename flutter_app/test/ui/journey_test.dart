@@ -1,3 +1,4 @@
+import 'package:armin_transport/routing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -8,7 +9,7 @@ import 'support/sample_data.dart';
 const String code = 'ARMN-7K2M-9QXD-4T8B';
 
 void main() {
-  testWidgets('on a phone an administrator gets to every section and out again', (tester) async {
+  testWidgets('on a phone an administrator gets to every section of the navigation and out again', (tester) async {
     final app = await pumpApp(
       tester,
       size: phoneSize,
@@ -37,6 +38,9 @@ void main() {
       expect(tester.takeException(), isNull, reason: section);
     }
 
+    // Whether the navigation offers a section is decided by the list of its entries in lib/routing.dart.
+    bool offered(String path) => navEntries.any((entry) => entry.path == path);
+
     expect(tester.takeException(), isNull);
     expect(app.requests, contains('GET /dashboard/summary'));
 
@@ -58,11 +62,15 @@ void main() {
     await go('کاربران');
     expect(find.text('armin.operator'), findsOneWidget);
 
-    await go('فیلدهای محموله');
-    expect(find.text('weight'), findsOneWidget);
+    if (offered(AppPaths.productFields)) {
+      await go('فیلدهای محموله');
+      expect(find.text('weight'), findsOneWidget);
+    }
 
-    await go('گزارش رویدادها');
-    expect(badge('ثبت محموله'), findsOneWidget);
+    if (offered(AppPaths.auditLogs)) {
+      await go('گزارش رویدادها');
+      expect(badge('ثبت محموله'), findsOneWidget);
+    }
 
     await go('داشبورد');
     expect(app.count('GET /dashboard/summary'), 2);

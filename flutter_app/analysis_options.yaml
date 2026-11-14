@@ -5,6 +5,16 @@ analyzer:
     - build/**
     - android/**
     - windows/**
+  errors:
+    # These two find real mistakes (a forgotten await, a context used after its widget is gone),
+    # so they count as warnings. Warnings fail the check in CI; the other lints are hints.
+    unawaited_futures: warning
+    use_build_context_synchronously: warning
+
+# The code is written for lines of up to 120 characters. `dart format` and the editors read the
+# width from here, so formatting a file leaves the rest of it as it is.
+formatter:
+  page_width: 120
 
 linter:
   rules:

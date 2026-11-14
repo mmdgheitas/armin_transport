@@ -74,7 +74,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         _busy = false;
         _failure = error is ApiError && error.isNetworkError
             ? 'اتصال به این نشانی برقرار نشد. نشانی و اتصال شبکه را بررسی کنید.'
-            : 'در این نشانی سرور حمل‌ونقل  پاسخ نداد. نشانی را بررسی کنید.';
+            : 'در این نشانی سرور $appName پاسخ نداد. نشانی را بررسی کنید.';
       });
       return;
     }
@@ -104,7 +104,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'نشانی سامانهٔ حمل‌ونقل  را وارد کنید. این نشانی را مدیر سامانه در اختیار شما می‌گذارد.',
+                  'نشانی سامانهٔ $appName را وارد کنید. این نشانی را مدیر سامانه در اختیار شما می‌گذارد.',
                   style: TextStyle(color: AppColors.muted, height: 1.7),
                 ),
                 const SizedBox(height: 20),

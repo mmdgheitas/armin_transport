@@ -1,20 +1,24 @@
-/// The first screen after login: the numbers of the company (or of all companies) and the latest shipments.
+/// The first screen after login: the numbers of the company (or of all companies).
+///
+/// Some parts are switched off for now and kept as comments: the button for a new shipment, the latest
+/// shipments, and the numbers of companies and employees for the administrator. Whoever switches one
+/// on again also needs the imports that are commented out below.
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+// import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/api/models.dart';
 import '../../core/format.dart';
 import '../../core/providers.dart';
-import '../../routing.dart';
+// import '../../routing.dart';
 import '../../theme.dart';
 import '../../widgets/async_block.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/layout.dart';
-import '../../widgets/paged_table.dart';
-import '../shipments/shipment_widgets.dart';
+// import '../../widgets/paged_table.dart';
+// import '../shipments/shipment_widgets.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -24,7 +28,7 @@ class DashboardPage extends ConsumerWidget {
     final auth = ref.watch(authProvider);
     final api = ref.watch(apiProvider);
     if (auth == null) return const SizedBox.shrink();
-    final canCreate = auth.can('shipment:create');
+    // final canCreate = auth.can('shipment:create');
     final company = auth.user.company?.name;
     // Widget createButton() => FilledButton.icon(
     //   onPressed: () => context.go(AppPaths.newShipment),
@@ -45,9 +49,9 @@ class DashboardPage extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _Stats(summary),
-              
+
               const SizedBox(height: 16),
-              
+
               // SectionCard(
               //   title: 'آخرین محموله‌ها',
               //   padded: false,
@@ -66,7 +70,6 @@ class DashboardPage extends ConsumerWidget {
               //           onOpen: (shipment) => context.go(AppPaths.shipment(shipment.id)),
               //         ),
               // ),
-            
             ],
           ),
         ),
@@ -89,7 +92,7 @@ class _Stats extends StatelessWidget {
       _Stat(Icons.local_shipping_outlined, Tone.success, summary.shipmentsActive, 'محموله‌های فعال'),
       _Stat(Icons.archive_outlined, Tone.warning, summary.shipmentsArchived, 'محموله‌های بایگانی‌شده'),
       _Stat(Icons.description_outlined, Tone.neutral, summary.documents, 'سندهای بارگذاری‌شده'),
-      
+
       // if (companies != null)
       //   _Stat(
       //     Icons.business_outlined,
@@ -104,7 +107,6 @@ class _Stats extends StatelessWidget {
       //     employees.active,
       //     'کارمند فعال از ${formatNumber(employees.total)} کارمند',
       //   ),
-    
     ];
     return LayoutBuilder(
       builder: (context, constraints) {

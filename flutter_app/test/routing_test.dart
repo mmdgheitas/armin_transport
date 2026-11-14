@@ -86,7 +86,11 @@ void main() {
     expect(navPathOf('/shipments'), '/shipments');
     expect(navPathOf('/shipments/new'), '/shipments');
     expect(navPathOf('/shipments/42/'), '/shipments');
-    expect(navPathOf('/product-fields'), '/product-fields');
+    expect(navPathOf('/users'), '/users');
+    for (final entry in navEntries) {
+      expect(navPathOf(entry.path), entry.path);
+      expect(navPathOf('${entry.path}/anything'), entry.path);
+    }
     expect(navPathOf('/profile'), isNull);
     expect(navPathOf('/shipmentsX'), isNull);
     expect(navPathOf('/'), isNull);
@@ -98,6 +102,9 @@ void main() {
     expect(titleOf('/shipments/new'), 'ثبت محمولهٔ جدید');
     expect(titleOf('/shipments/42'), 'جزئیات محموله');
     expect(titleOf('/profile/'), 'حساب کاربری');
+    // These have their titles whether or not the navigation offers them.
+    expect(titleOf('/product-fields'), 'فیلدهای محموله');
+    expect(titleOf('/audit-logs'), 'گزارش رویدادها');
     expect(titleOf('/nowhere'), appName);
   });
 

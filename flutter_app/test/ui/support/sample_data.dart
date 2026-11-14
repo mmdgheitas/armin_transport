@@ -19,7 +19,7 @@ Json shipmentJson({
   'company_id': 'c1',
   'company': {
     'id': 'c1',
-    'name': 'حمل‌ونقل ',
+    'name': 'حمل‌ونقل',
     'company_code': 'ARMIN',
     'is_active': true,
   },
@@ -39,7 +39,7 @@ Json dashboardJson({bool global = false, List<Json>? recent}) => {
       ? null
       : {
           'id': 'c1',
-          'name': 'حمل‌ونقل ',
+          'name': 'حمل‌ونقل',
           'company_code': 'ARMIN',
           'is_active': true,
         },

@@ -75,7 +75,7 @@ void main() {
     expect(restored.accessExpiresAt, first.auth!.accessExpiresAt);
     expect(restored.refreshExpiresAt, first.auth!.refreshExpiresAt);
     expect(restored.user.fullName, 'سارا محمدی');
-    expect(restored.user.company!.name, 'حمل‌ونقل ');
+    expect(restored.user.company!.name, 'حمل‌ونقل');
     expect(restored.permissions, first.auth!.permissions);
     expect(restored.settings.upload.allowedExtensions, contains('pdf'));
     expect(restored.settings.maxPageSize, 100);

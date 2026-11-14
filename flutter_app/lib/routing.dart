@@ -19,15 +19,15 @@ abstract final class AppPaths {
   static String shipment(String id) => '/shipments/${Uri.encodeComponent(id)}';
 
   /// The list of users, limited to the employees of one company.
-  static String usersOf(String companyId) =>
-      Uri(path: users, queryParameters: {'company_id': companyId}).toString();
+  static String usersOf(String companyId) => Uri(path: users, queryParameters: {'company_id': companyId}).toString();
 
   /// The login screen that continues at [next] after a successful login.
-  static String loginThen(String next) =>
-      Uri(path: login, queryParameters: {'next': next}).toString();
+  static String loginThen(String next) => Uri(path: login, queryParameters: {'next': next}).toString();
 }
 
 /// An entry of the main navigation. It is shown to users who hold [permission].
+///
+/// A screen without an entry stays in the app (its route, its title and its tests), it is only not offered.
 class NavEntry {
   const NavEntry(this.path, this.label, this.permission);
 
@@ -46,7 +46,7 @@ const List<NavEntry> navEntries = [
 ];
 
 /// The name of the app as the user sees it.
-const String appName = 'حمل‌ونقل ';
+const String appName = 'حمل‌ونقل';
 
 /// The title of the staff screen at [path], shown in the bar above it.
 String titleOf(String path) {
@@ -57,6 +57,9 @@ String titleOf(String path) {
   for (final entry in navEntries) {
     if (normalized == entry.path) return entry.label;
   }
+  // Screens that have no entry in the navigation at the moment.
+  if (normalized == AppPaths.productFields) return 'فیلدهای محموله';
+  if (normalized == AppPaths.auditLogs) return 'گزارش رویدادها';
   return appName;
 }
 
@@ -70,8 +73,7 @@ String _normalize(String path) {
 String? navPathOf(String path) {
   final normalized = _normalize(path);
   for (final entry in navEntries) {
-    if (normalized == entry.path || normalized.startsWith('${entry.path}/'))
-      return entry.path;
+    if (normalized == entry.path || normalized.startsWith('${entry.path}/')) return entry.path;
   }
   return null;
 }
@@ -91,11 +93,9 @@ String? redirectFor(
   if (!hasServer) return path == AppPaths.setup ? null : AppPaths.setup;
   // An address that is built into the app cannot be changed, so there is nothing to set up.
   if (path == AppPaths.setup) return serverIsFixed ? AppPaths.home : null;
-  if (path == AppPaths.home)
-    return signedIn ? AppPaths.dashboard : AppPaths.track;
+  if (path == AppPaths.home) return signedIn ? AppPaths.dashboard : AppPaths.track;
   if (path == AppPaths.track) return null;
-  if (path == AppPaths.login)
-    return signedIn ? safeNextLocation(location.queryParameters['next']) : null;
+  if (path == AppPaths.login) return signedIn ? safeNextLocation(location.queryParameters['next']) : null;
   return signedIn ? null : AppPaths.loginThen(location.toString());
 }
 

@@ -195,7 +195,7 @@ const Json employeeUser = {
   'company_id': 'c1',
   'company': {
     'id': 'c1',
-    'name': 'حمل‌ونقل ',
+    'name': 'حمل‌ونقل',
     'company_code': 'ARMIN',
     'is_active': true,
   },
@@ -266,8 +266,7 @@ class ClientHarness {
     String baseUrl = 'https://armin.test/api/v1/',
   }) : adapter = FakeAdapter(handler),
        clock = clock ?? FakeClock() {
-    if (signedIn)
-      session = AuthSession.fromAuthResponse(authPayload(), this.clock.now);
+    if (signedIn) session = AuthSession.fromAuthResponse(authPayload(), this.clock.now);
     api = ApiClient(
       baseUrl: baseUrl,
       dio: fakeDio(adapter),
