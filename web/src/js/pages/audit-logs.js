@@ -66,7 +66,7 @@ const WARNING_ACTIONS = new Set([
   'CUSTOMER_LOOKUP_FAILED',
 ]);
 
-const actionLabel = (action) => ACTION_LABELS[action] ?? action;
+export const actionLabel = (action) => ACTION_LABELS[action] ?? action;
 const entityLabel = (type) => ENTITY_LABELS[type] ?? type;
 
 function showDetails(entry) {
@@ -136,6 +136,7 @@ export function auditLogsPage(ctx) {
         ctx,
         '/audit-logs',
         {
+          company_id: query.company_id,
           action: query.action,
           entity_type: query.entity_type,
           created_from: query.created_from ? startOfLocalDay(query.created_from) : null,

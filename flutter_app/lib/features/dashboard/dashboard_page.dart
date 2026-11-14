@@ -24,54 +24,31 @@ class DashboardPage extends ConsumerWidget {
     final auth = ref.watch(authProvider);
     final api = ref.watch(apiProvider);
     if (auth == null) return const SizedBox.shrink();
-    final canCreate = auth.can('shipment:create');
     final company = auth.user.company?.name;
-    // Widget createButton() => FilledButton.icon(
-    //   onPressed: () => context.go(AppPaths.newShipment),
-    //   icon: const Icon(Icons.add, size: 18),
-    //   label: const Text('ثبت محمولهٔ جدید'),
-    // );
-
-    return PageBody(
-      children: [
-        PageHeader(
-          title: '${auth.user.fullName}، خوش آمدید',
-          description: company == null ? 'خلاصهٔ وضعیت همهٔ شرکت‌ها' : 'خلاصهٔ وضعیت $company',
-          // actions: [if (canCreate) createButton()],
-        ),
-        AsyncBlock<DashboardSummary>(
-          load: api.dashboard,
-          builder: (context, summary) => Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _Stats(summary),
-              
-              const SizedBox(height: 16),
-              
-              // SectionCard(
-              //   title: 'آخرین محموله‌ها',
-              //   padded: false,
-              //   actions: [
-              //     OutlinedButton(onPressed: () => context.go(AppPaths.shipments), child: const Text('مشاهدهٔ همه')),
-              //   ],
-              //   child: summary.recentShipments.isEmpty
-              //       ? EmptyBlock(
-              //           icon: Icons.inventory_2_outlined,
-              //           title: 'هنوز محموله‌ای ثبت نشده است.',
-              //           action: canCreate ? createButton() : null,
-              //         )
-              //       : ResponsiveTable<Shipment>(
-              //           items: summary.recentShipments,
-              //           columns: shipmentColumns(showCompany: summary.isGlobal),
-              //           onOpen: (shipment) => context.go(AppPaths.shipment(shipment.id)),
-              //         ),
-              // ),
-            
-            ],
-          ),
-        ),
-      ],
-    );
+    return PageBody(children: [
+      PageHeader(title: '${auth.user.fullName}، خوش آمدید',
+        description: company == null ? 'خلاصهٔ وضعیت همهٔ شرکت‌ها' : 'پنل شرکت $company',
+        actions: [
+          OutlinedButton(onPressed: () => context.go(AppPaths.shipments), child: const Text('همهٔ محموله‌ها و جست‌وجو')),
+          if (auth.can('company_activity:view'))
+            OutlinedButton(onPressed: () => context.go(AppPaths.companyActivity), child: const Text('سابقهٔ فعالیت شرکت')),
+        ]),
+      AsyncBlock<DashboardSummary>(load: api.dashboard,
+        builder: (context, summary) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          _Stats(summary),
+          const SizedBox(height: 16),
+          if (summary.company?.lastActivity != null) ...[
+            Text('آخرین فعالیت: ${summary.company!.lastActivity!.user?.fullName ?? 'سامانه'} · ${formatDateTime(summary.company!.lastActivity!.createdAt)}'),
+            const SizedBox(height: 16),
+          ],
+          SectionCard(title: 'آخرین محموله‌ها', padded: false,
+            child: summary.recentShipments.isEmpty
+              ? const EmptyBlock(icon: Icons.inventory_2_outlined, title: 'هنوز محموله‌ای ثبت نشده است.')
+              : ResponsiveTable<Shipment>(items: summary.recentShipments,
+                  columns: shipmentColumns(showCompany: summary.isGlobal),
+                  onOpen: (shipment) => context.go(AppPaths.shipment(shipment.id)))),
+        ])),
+    ]);
   }
 }
 

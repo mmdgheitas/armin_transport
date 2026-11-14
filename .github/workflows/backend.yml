@@ -1,4 +1,4 @@
-# The backend (Flask API): formatting, static analysis and the test suite on MySQL 8.
+# The backend (Flask API): formatting, static analysis and tests on SQLite3.
 name: Backend
 
 on:
@@ -23,21 +23,6 @@ jobs:
     name: Lint, types and tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: ci-root-password
-          MYSQL_DATABASE: armin_transport_test
-        ports: ["3306:3306"]
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -pci-root-password --silent"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=30
-    env:
-      # A database that exists only for this run; the password protects nothing.
-      TEST_DATABASE_URL: mysql+pymysql://root:ci-root-password@127.0.0.1:3306/armin_transport_test?charset=utf8mb4
     defaults:
       run:
         shell: bash
@@ -62,18 +47,11 @@ jobs:
         run: |
           set -o pipefail
           mypy 2>&1 | tee "$RUNNER_TEMP/out/types.txt"
-      - name: Tests on MySQL
+      - name: Tests on SQLite3
         if: always()
         run: |
           set -o pipefail
-          pytest --cov --cov-report=term 2>&1 | tee "$RUNNER_TEMP/out/tests-mysql.txt"
-      - name: Tests on the SQLite fallback
-        if: always()
-        env:
-          TEST_DATABASE_URL: ""
-        run: |
-          set -o pipefail
-          pytest -q 2>&1 | tee "$RUNNER_TEMP/out/tests-sqlite.txt"
+          pytest --cov --cov-report=term 2>&1 | tee "$RUNNER_TEMP/out/tests-sqlite.txt"
       - name: Attach the output of what failed
         if: failure()
         env:

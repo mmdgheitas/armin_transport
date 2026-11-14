@@ -27,11 +27,20 @@ export function usersPage(ctx) {
         maxlength: 100,
         hint: 'حروف انگلیسی، رقم، نقطه، خط تیره و زیرخط؛ دست‌کم ۳ نویسه.',
       }),
-      company_id: selectField({ label: 'شرکت', value: user?.company_id ?? query.company_id ?? '', required: true, placeholder: 'انتخاب کنید', options: companyOptions(companies) }),
+      role: selectField({ label: 'نوع حساب', value: user?.role ?? 'EMPLOYEE', options: [{ value: 'EMPLOYEE', label: 'کارمند' }, { value: 'CUSTOMER', label: 'مشتری' }] }),
+      company_id: selectField({ label: 'شرکت', value: user?.company_id ?? query.company_id ?? '', placeholder: 'فقط برای حساب مشتری', options: companyOptions(companies) }),
       ...(isNew ? { password: passwordField({ label: 'رمز عبور اولیه', autocomplete: 'new-password', hint: passwordHint }) } : {}),
       is_active: checkboxField({ label: 'حساب کاربری فعال است', checked: user?.is_active ?? true, hint: 'با غیرفعال شدن حساب، همهٔ نشست‌های کاربر بسته می‌شود.' }),
     };
     if (!canSetActive) delete fields.is_active;
+    fields.role.control.disabled = !isNew;
+    const updateCompanyField = () => {
+      const isCustomer = fields.role.control.value === 'CUSTOMER';
+      fields.company_id.element.hidden = !isCustomer;
+      fields.company_id.control.required = isCustomer;
+    };
+    fields.role.control.addEventListener('change', updateCompanyField);
+    updateCompanyField();
     return buildForm({
       fields,
       submitLabel: isNew ? 'ایجاد کارمند' : 'ذخیرهٔ تغییرات',
@@ -41,11 +50,11 @@ export function usersPage(ctx) {
         requiredProblems(values, {
           full_name: 'نام را وارد کنید.',
           username: 'نام کاربری را وارد کنید.',
-          company_id: 'شرکت را انتخاب کنید.',
+          ...(values.role === 'CUSTOMER' ? { company_id: 'شرکت را انتخاب کنید.' } : {}),
           ...(isNew ? { password: 'رمز عبور را وارد کنید.' } : {}),
         }),
       async onSubmit(values) {
-        const payload = { full_name: values.full_name.trim(), username: values.username.trim(), company_id: values.company_id };
+        const payload = { ...(!user ? { role: values.role } : {}), full_name: values.full_name.trim(), username: values.username.trim(), ...(values.role === 'CUSTOMER' ? { company_id: values.company_id } : {}) };
         if (canSetActive) payload.is_active = values.is_active;
         if (isNew) payload.password = values.password;
         const { message } = isNew ? await api.post('/users', { json: payload }) : await api.patch(`/users/${user.id}`, { json: payload });
@@ -61,10 +70,6 @@ export function usersPage(ctx) {
     const modal = openModal({ title: user ? `ویرایش ${user.full_name}` : 'کارمند جدید', content: body });
     try {
       const companies = await companiesPromise;
-      if (companies.length === 0) {
-        body.replaceChildren(alertBox('warning', 'ابتدا باید دست‌کم یک شرکت تعریف کنید. ', h('a', { href: '#/companies', onClick: () => modal.close() }, 'مدیریت شرکت‌ها')));
-        return;
-      }
       const form = userForm({ user, companies, close: modal.close });
       body.replaceChildren(form.element);
       form.fields.full_name.focus();
@@ -104,6 +109,7 @@ export function usersPage(ctx) {
       placeholder: 'همه',
       options: [
         { value: 'EMPLOYEE', label: 'کارمند' },
+        { value: 'CUSTOMER', label: 'حساب شرکت' },
         { value: 'SUPER_ADMIN', label: 'مدیر مرکزی' },
       ],
     }),

@@ -22,6 +22,7 @@ const Map<String, IconData> _navIcons = {
   AppPaths.users: Icons.people_outline,
   AppPaths.productFields: Icons.tune,
   AppPaths.auditLogs: Icons.history,
+  AppPaths.companyActivity: Icons.history,
 };
 
 class AppShell extends ConsumerStatefulWidget {

@@ -114,7 +114,6 @@ def test_disabled_limiter_allows_everything(app_context: None) -> None:
     assert db.session.scalar(db.select(db.func.count()).select_from(RateLimitCounter)) == 0
 
 
-@pytest.mark.mysql
 @pytest.mark.parametrize("round_number", range(5))
 def test_concurrent_hits_are_all_counted(app: Flask, round_number: int) -> None:
     """Many workers hitting a counter that does not exist yet: no lost updates, no deadlocks."""

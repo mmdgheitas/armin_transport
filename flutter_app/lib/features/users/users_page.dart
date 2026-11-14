@@ -2,13 +2,11 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/api/models.dart';
 import '../../core/format.dart';
 import '../../core/providers.dart';
-import '../../routing.dart';
 import '../../widgets/dialogs.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/fields.dart';
@@ -268,6 +266,7 @@ class _UserDialogState extends ConsumerState<_UserDialog> with FormSupport<_User
   late final TextEditingController _fullName = TextEditingController(text: widget.user?.fullName ?? '');
   late final TextEditingController _username = TextEditingController(text: widget.user?.username ?? '');
   final TextEditingController _password = TextEditingController();
+  late String _accountRole = widget.user?.role ?? 'EMPLOYEE';
   late String? _companyId = widget.user?.companyId ?? widget.initialCompanyId;
   late bool _isActive = widget.user?.isActive ?? true;
 
@@ -323,7 +322,8 @@ class _UserDialogState extends ConsumerState<_UserDialog> with FormSupport<_User
     final payload = <String, dynamic>{
       'full_name': fullName,
       'username': username,
-      'company_id': companyId,
+      if (_accountRole == 'CUSTOMER') 'company_id': companyId,
+      if (user == null) 'role': _accountRole,
       if (_maySetActive(ref.read(authProvider))) 'is_active': _isActive,
       if (user == null) 'password': password,
     };
@@ -335,7 +335,7 @@ class _UserDialogState extends ConsumerState<_UserDialog> with FormSupport<_User
         {
           'full_name': 'نام را وارد کنید.',
           'username': 'نام کاربری را وارد کنید.',
-          'company_id': 'شرکت را انتخاب کنید.',
+          if (_accountRole == 'CUSTOMER') 'company_id': 'شرکت را انتخاب کنید.',
           if (user == null) 'password': 'رمز عبور را وارد کنید.',
         },
       ),
@@ -370,23 +370,6 @@ class _UserDialogState extends ConsumerState<_UserDialog> with FormSupport<_User
     final loadError = _loadError;
     if (loadError != null) return _waiting(title, ErrorBlock(error: loadError, onRetry: _retry));
     if (companies == null) return _waiting(title, const LoadingBlock(text: 'در حال دریافت فهرست شرکت‌ها…'));
-    if (companies.isEmpty) {
-      return _waiting(
-        title,
-        const Notice('ابتدا باید دست‌کم یک شرکت تعریف کنید.', tone: Tone.warning),
-        actions: [
-          FilledButton(
-            onPressed: () {
-              // The router is found before the dialog (and with it this context) is gone.
-              final router = GoRouter.of(context);
-              Navigator.of(context).pop();
-              router.go(AppPaths.companies);
-            },
-            child: const Text('مدیریت شرکت‌ها'),
-          ),
-        ],
-      );
-    }
     return FormDialog(
       title: title,
       submitLabel: user == null ? 'ایجاد کارمند' : 'ذخیرهٔ تغییرات',
@@ -413,7 +396,11 @@ class _UserDialogState extends ConsumerState<_UserDialog> with FormSupport<_User
           error: errors['username'],
           hint: 'حروف انگلیسی، رقم، نقطه، خط تیره و زیرخط؛ دست‌کم ۳ نویسه.',
         ),
-        ChoiceField<String>(
+        ChoiceField<String>(label: 'نوع حساب', value: _accountRole,
+          enabled: !busy && user == null,
+          options: const [('EMPLOYEE', 'کارمند مشترک'), ('CUSTOMER', 'حساب شرکت')],
+          onChanged: (value) => setState(() => _accountRole = value ?? 'EMPLOYEE')),
+        if (_accountRole == 'CUSTOMER') ChoiceField<String>(
           label: 'شرکت',
           isRequired: true,
           value: _companyId,

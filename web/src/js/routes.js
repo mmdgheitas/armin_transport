@@ -1,5 +1,6 @@
 /** Route table and main navigation. Guards are declarative; see core/router.js. */
 
+import { companyActivityPage } from './pages/company-activity.js';
 import { auditLogsPage } from './pages/audit-logs.js';
 import { companiesPage } from './pages/companies.js';
 import { dashboardPage } from './pages/dashboard.js';
@@ -13,7 +14,8 @@ import { trackPage } from './pages/track.js';
 import { usersPage } from './pages/users.js';
 
 export const ROUTES = [
-  { path: '/track', page: trackPage, layout: 'public' },
+  { path: '/company-activity', page: companyActivityPage, auth: true, permission: 'company_activity:view' },
+  { path: '/track', page: trackPage, auth: true },
   { path: '/login', page: loginPage, layout: 'public', narrow: true, guestOnly: true },
   { path: '/dashboard', page: dashboardPage, auth: true, permission: 'dashboard:view' },
   { path: '/shipments', page: shipmentsPage, auth: true, permission: 'shipment:view' },
@@ -27,6 +29,7 @@ export const ROUTES = [
 ];
 
 export const NAV_ITEMS = [
+  { path: '/company-activity', label: 'سابقهٔ فعالیت شرکت', icon: 'list', permission: 'company_activity:view' },
   { path: '/dashboard', label: 'داشبورد', icon: 'grid', permission: 'dashboard:view' },
   { path: '/shipments', label: 'محموله‌ها', icon: 'package', permission: 'shipment:view' },
   { path: '/companies', label: 'شرکت‌ها', icon: 'briefcase', permission: 'company:view' },

@@ -88,7 +88,9 @@ class ShipmentRepository:
         statement = statement.order_by(*SORT_OPTIONS.get(sort, SORT_OPTIONS[DEFAULT_SORT]))
         return paginate(self._session, statement, page, per_page)
 
-    def document_counts(self, shipment_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, int]:
+    def document_counts(
+        self, shipment_ids: Sequence[uuid.UUID], uploaded_by: uuid.UUID | None = None
+    ) -> dict[uuid.UUID, int]:
         if not shipment_ids:
             return {}
         statement = (
@@ -96,6 +98,8 @@ class ShipmentRepository:
             .where(Document.shipment_id.in_(shipment_ids), Document.deleted_at.is_(None))
             .group_by(Document.shipment_id)
         )
+        if uploaded_by is not None:
+            statement = statement.where(Document.uploaded_by == uploaded_by)
         return {shipment_id: int(count) for shipment_id, count in self._session.execute(statement).all()}
 
     def history(self, shipment_id: uuid.UUID, page: int, per_page: int) -> Page[TrackingCodeHistory]:

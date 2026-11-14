@@ -18,9 +18,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError
+
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
 REPO_ROOT = BACKEND_ROOT.parent
 APP_VERSION = "1.0.0"
+DEFAULT_DATABASE_URL = f"sqlite:///{BACKEND_ROOT / 'instance' / 'armin_transport.sqlite3'}"
 
 ENVIRONMENTS = ("development", "testing", "production")
 # Every extension whose content the upload pipeline can verify. ALLOWED_UPLOAD_EXTENSIONS
@@ -145,9 +149,9 @@ class Settings:
         return self.env == "production"
 
     @property
-    def max_request_size_bytes(self) -> int:
+    def max_request_size_bytes(self) -> int | None:
         """Upper bound for a whole multipart request (all files plus form overhead)."""
-        return self.max_upload_size_bytes * self.max_files_per_upload + 1024 * 1024
+        return None
 
     @property
     def database_dialect(self) -> str:
@@ -215,12 +219,9 @@ def _database_url(env: _Env, env_name: str) -> str:
         url = env.optional("TEST_DATABASE_URL")
         if url:
             return url
-        # Portable fallback so the suite runs without MySQL; CI runs the suite on MySQL 8.
+        # Tests always use a separate database, never the application database.
         return f"sqlite:///{Path(tempfile.gettempdir()) / f'armin_transport_test_{os.getpid()}.sqlite3'}"
-    url = env.optional("DATABASE_URL")
-    if not url:
-        raise ConfigError("DATABASE_URL is required, e.g. mysql+pymysql://user:password@127.0.0.1:3306/armin_transport")
-    return url
+    return env.optional("DATABASE_URL") or DEFAULT_DATABASE_URL
 
 
 def _jwt_secret(env: _Env, env_name: str) -> str:
@@ -275,8 +276,8 @@ def load_settings(
         argon2_memory_cost_kib=env.integer("ARGON2_MEMORY_COST_KIB", 1024 if is_testing else 65536, minimum=8),
         argon2_parallelism=env.integer("ARGON2_PARALLELISM", 1 if is_testing else 4, minimum=1),
         storage_root=Path(env.text("STORAGE_ROOT", str(default_storage))).expanduser(),
-        max_upload_size_bytes=env.integer("MAX_UPLOAD_SIZE_BYTES", 10 * 1024 * 1024, minimum=1024),
-        max_files_per_upload=env.integer("MAX_FILES_PER_UPLOAD", 10, minimum=1, maximum=50),
+        max_upload_size_bytes=0,
+        max_files_per_upload=12,
         allowed_upload_extensions=frozenset(
             item.lower().lstrip(".") for item in env.csv("ALLOWED_UPLOAD_EXTENSIONS", DEFAULT_ALLOWED_EXTENSIONS)
         ),
@@ -326,9 +327,15 @@ def load_settings(
 def _validate_general(settings: Settings) -> None:
     if settings.database_dialect not in SUPPORTED_DATABASE_DIALECTS:
         raise ConfigError(
-            "DATABASE_URL must point to MySQL (mysql+pymysql://...). SQLite is accepted for tests and local "
-            "experiments only."
+            "DATABASE_URL must point to SQLite (sqlite:////absolute/path/armin_transport.sqlite3) "
+            "or the optional MySQL backend (mysql+pymysql://...)."
         )
+    try:
+        url = make_url(settings.database_url)
+    except ArgumentError as exc:
+        raise ConfigError("DATABASE_URL is not a valid SQLAlchemy database URL.") from exc
+    if settings.database_dialect == "sqlite" and url.drivername not in {"sqlite", "sqlite+pysqlite"}:
+        raise ConfigError("DATABASE_URL must use SQLite's built-in sqlite3 driver (sqlite or sqlite+pysqlite).")
     if settings.jwt_algorithm not in {"HS256", "HS384", "HS512"}:
         raise ConfigError("JWT_ALGORITHM must be one of HS256, HS384 or HS512.")
     if settings.default_page_size > settings.max_page_size:
@@ -381,8 +388,12 @@ def _validate_http(settings: Settings) -> None:
 def _validate_production(settings: Settings) -> None:
     if settings.jwt_secret_key.lower() in _PLACEHOLDER_SECRETS or len(settings.jwt_secret_key) < _MIN_SECRET_LENGTH:
         raise ConfigError(f"JWT_SECRET_KEY must be a random secret of at least {_MIN_SECRET_LENGTH} characters.")
-    if settings.database_dialect != "mysql":
-        raise ConfigError("Production requires a MySQL database (DATABASE_URL must start with 'mysql+').")
+    if settings.database_dialect == "sqlite":
+        url = make_url(settings.database_url)
+        if not url.database or not Path(url.database).is_absolute() or url.query.get("mode") == "memory":
+            raise ConfigError(
+                "Production SQLite requires an absolute path to a persistent database file (DATABASE_URL)."
+            )
     if not settings.storage_root.is_absolute():
         raise ConfigError("STORAGE_ROOT must be an absolute path in production.")
     if "*" in settings.cors_allowed_origins:
@@ -414,7 +425,7 @@ def engine_options(settings: Settings) -> dict[str, Any]:
                 "init_command": ("SET SESSION sql_mode='TRADITIONAL,ONLY_FULL_GROUP_BY', SESSION time_zone='+00:00'"),
             },
         }
-    # SQLite (tests and local experiments): wait for a concurrent writer instead of failing at once.
+    # SQLite: wait for a concurrent writer; explicit BEGIN preserves SAVEPOINT semantics.
     return {"connect_args": {"timeout": 30}}
 
 

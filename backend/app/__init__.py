@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 from flask import Blueprint, Flask
@@ -36,7 +37,7 @@ API_PREFIX = "/api/v1"
 
 
 def _configure_sqlite(app: Flask) -> None:
-    """Make SQLite (test fallback only) honour foreign keys and SAVEPOINT semantics."""
+    """Configure SQLite for persistent use: foreign keys, WAL and explicit transactions."""
     with app.app_context():
         engine = db.engine
 
@@ -46,7 +47,9 @@ def _configure_sqlite(app: Flask) -> None:
         dbapi_connection.isolation_level = None
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA busy_timeout=30000")
         cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=FULL")
         cursor.close()
 
     @event.listens_for(engine, "begin")
@@ -100,6 +103,8 @@ def create_app(env_name: str | None = None, overrides: Mapping[str, Any] | None 
         count = settings.trusted_proxy_count
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=count, x_proto=count, x_host=count)  # type: ignore[method-assign]
 
+    # Flask resolves relative SQLite filenames under this private instance directory.
+    Path(app.instance_path).mkdir(parents=True, exist_ok=True)
     db.init_app(app)
     migrate.init_app(app, db, directory=str(BACKEND_ROOT / "migrations"), compare_type=True)
     if settings.database_dialect == "sqlite":

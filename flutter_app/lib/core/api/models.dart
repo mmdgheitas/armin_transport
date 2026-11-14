@@ -59,19 +59,21 @@ class PageOf<T> {
 // ---------------------------------------------------------------------------------------------- people and companies
 
 class CompanyRef {
-  const CompanyRef({required this.id, required this.name, this.companyCode = '', this.isActive = true});
+  const CompanyRef({required this.id, required this.name, this.companyCode = '', this.isActive = true, this.lastActivity});
 
   factory CompanyRef.fromJson(Json json) => CompanyRef(
     id: _text(json['id']),
     name: _text(json['name']),
     companyCode: _text(json['company_code']),
     isActive: _flag(json['is_active'], true),
+    lastActivity: json['last_activity'] is Map ? AuditLogEntry.fromJson(asJson(json['last_activity'])) : null,
   );
 
   final String id;
   final String name;
   final String companyCode;
   final bool isActive;
+  final AuditLogEntry? lastActivity;
 }
 
 class PersonRef {
@@ -96,6 +98,7 @@ class Company {
     this.createdAt,
     this.employeeCount,
     this.shipmentCount,
+    this.lastActivity,
   });
 
   factory Company.fromJson(Json json) => Company(
@@ -105,6 +108,7 @@ class Company {
     phone: _optionalText(json['phone']),
     address: _optionalText(json['address']),
     isActive: _flag(json['is_active'], true),
+    lastActivity: json['last_activity'] is Map ? AuditLogEntry.fromJson(asJson(json['last_activity'])) : null,
     createdAt: _instant(json['created_at']),
     employeeCount: json['employee_count'] is int ? json['employee_count'] as int : null,
     shipmentCount: json['shipment_count'] is int ? json['shipment_count'] as int : null,
@@ -116,6 +120,7 @@ class Company {
   final String? phone;
   final String? address;
   final bool isActive;
+  final AuditLogEntry? lastActivity;
   final DateTime? createdAt;
   final int? employeeCount;
   final int? shipmentCount;
@@ -157,7 +162,7 @@ class UserAccount {
   final DateTime? createdAt;
 
   bool get isAdmin => role == 'SUPER_ADMIN';
-  String get roleLabel => isAdmin ? 'مدیر مرکزی' : 'کارمند';
+  String get roleLabel => isAdmin ? 'مدیر مرکزی' : role == 'CUSTOMER' ? 'حساب شرکت' : 'کارمند';
 }
 
 // ---------------------------------------------------------------------------------------------- session

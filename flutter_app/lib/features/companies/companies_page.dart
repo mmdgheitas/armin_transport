@@ -132,6 +132,7 @@ class _CompaniesPageState extends ConsumerState<CompaniesPage> {
                     return phone == null || phone.isEmpty ? const Text(emptyPlaceholder) : LtrText(phone);
                   }),
                   TableColumn<Company>('وضعیت', (context, company) => StatusBadge.active(company.isActive)),
+                  TableColumn<Company>('آخرین فعالیت', (context, company) => Text(company.lastActivity == null ? emptyPlaceholder : '${company.lastActivity!.user?.fullName ?? 'سامانه'} · ${formatDateTime(company.lastActivity!.createdAt)}')),
                   TableColumn<Company>('تاریخ ایجاد', (context, company) => Text(formatDateTime(company.createdAt))),
                 ],
                 actions: !canUpdate && !canSeeUsers
@@ -170,6 +171,8 @@ class _CompanyDialog extends ConsumerStatefulWidget {
 }
 
 class _CompanyDialogState extends ConsumerState<_CompanyDialog> with FormSupport<_CompanyDialog> {
+  final TextEditingController _username = TextEditingController();
+  final TextEditingController _password = TextEditingController();
   late final TextEditingController _name = TextEditingController(text: widget.company?.name ?? '');
   late final TextEditingController _code = TextEditingController(text: widget.company?.companyCode ?? '');
   late final TextEditingController _phone = TextEditingController(text: widget.company?.phone ?? '');
@@ -180,7 +183,7 @@ class _CompanyDialogState extends ConsumerState<_CompanyDialog> with FormSupport
   Company? _details;
 
   @override
-  Set<String> get fieldNames => const {'name', 'company_code', 'phone', 'address'};
+  Set<String> get fieldNames => const {'name', 'company_code', 'phone', 'address', 'username', 'password'};
 
   @override
   void initState() {
@@ -200,6 +203,8 @@ class _CompanyDialogState extends ConsumerState<_CompanyDialog> with FormSupport
 
   @override
   void dispose() {
+    _username.dispose();
+    _password.dispose();
     _name.dispose();
     _code.dispose();
     _phone.dispose();
@@ -217,6 +222,8 @@ class _CompanyDialogState extends ConsumerState<_CompanyDialog> with FormSupport
     final phone = _phone.text.trim();
     final address = _address.text.trim();
     final payload = <String, dynamic>{
+      if (company == null) 'username': _username.text.trim(),
+      if (company == null) 'password': _password.text,
       'name': name,
       'company_code': code,
       'phone': phone.isEmpty ? null : phone,
@@ -227,8 +234,10 @@ class _CompanyDialogState extends ConsumerState<_CompanyDialog> with FormSupport
     String? message;
     final done = await runForm(
       problems: requiredProblems(
-        {'name': name, 'company_code': code},
-        const {'name': 'نام شرکت را وارد کنید.', 'company_code': 'کد شرکت را وارد کنید.'},
+        {'name': name, 'company_code': code, 'username': _username.text.trim(), 'password': _password.text},
+        {'name': 'نام شرکت را وارد کنید.', 'company_code': 'کد شرکت را وارد کنید.',
+          if (company == null) 'username': 'نام کاربری شرکت را وارد کنید.',
+          if (company == null) 'password': 'رمز عبور شرکت را وارد کنید.'},
       ),
       () async {
         final result = company == null
@@ -246,7 +255,6 @@ class _CompanyDialogState extends ConsumerState<_CompanyDialog> with FormSupport
   Widget build(BuildContext context) {
     final company = widget.company;
     // Shown only when the server has told both numbers: a guessed zero would be a wrong statement.
-    final employees = _details?.employeeCount;
     final shipments = _details?.shipmentCount;
     final maySetActive = _maySetActive(ref.watch(authProvider));
     return FormDialog(
@@ -256,8 +264,14 @@ class _CompanyDialogState extends ConsumerState<_CompanyDialog> with FormSupport
       error: formError,
       onSubmit: _submit,
       children: [
-        if (employees != null && shipments != null)
-          Notice('${formatNumber(employees)} کارمند و ${formatNumber(shipments)} محموله برای این شرکت ثبت شده است.'),
+        if (shipments != null)
+          Notice('${formatNumber(shipments)} محموله برای این شرکت ثبت شده است.'),
+        if (company == null) ...[
+          AppTextField(label: 'نام کاربری شرکت', controller: _username, isRequired: true,
+            ltr: true, maxLength: 100, enabled: !busy, error: errors['username']),
+          PasswordField(label: 'رمز عبور شرکت', controller: _password, isNew: true,
+            enabled: !busy, error: errors['password']),
+        ],
         AppTextField(
           label: 'نام شرکت',
           controller: _name,
@@ -299,7 +313,7 @@ class _CompanyDialogState extends ConsumerState<_CompanyDialog> with FormSupport
             label: 'شرکت فعال است',
             value: _isActive,
             enabled: !busy,
-            hint: 'با غیرفعال شدن شرکت، کارمندان آن دیگر نمی‌توانند وارد سامانه شوند.',
+            hint: 'با غیرفعال شدن شرکت، ورود حساب شرکت مسدود می‌شود.',
             onChanged: (value) => setState(() => _isActive = value),
           ),
       ],

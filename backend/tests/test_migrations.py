@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable, Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 
 import flask_migrate
@@ -112,7 +113,15 @@ def test_application_works_on_a_migrated_database(migrated_app: Flask) -> None:
     assert login.status_code == 200, login.get_json()
     client.token = login.get_json()["data"]["access_token"]
 
-    company = client.post("/companies", json={"name": "شرکت مهاجرت", "company_code": "MIG"})
+    company = client.post(
+        "/companies",
+        json={
+            "name": "شرکت مهاجرت",
+            "company_code": "MIG",
+            "username": "migration-company",
+            "password": DEFAULT_PASSWORD,
+        },
+    )
     assert company.status_code == 201, company.get_json()
     shipment = client.post("/shipments", json={"company_id": company.get_json()["data"]["id"]})
     assert shipment.status_code == 201, shipment.get_json()
@@ -130,8 +139,8 @@ def test_migrated_schema_enforces_the_data_integrity_rules(migrated_app: Flask) 
         violations = [
             Company(name="ب", company_code="DUP"),  # unique company code
             User(
-                username="orphan", full_name="x", password_hash="x", role=UserRole.EMPLOYEE
-            ),  # employee without company
+                username="orphan", full_name="x", password_hash="x", role=UserRole.CUSTOMER
+            ),  # customer without company
             User(username="scoped", full_name="x", password_hash="x", role=UserRole.SUPER_ADMIN, company_id=company.id),
             User(username="ghost", full_name="x", password_hash="x", role=UserRole.EMPLOYEE, company_id=uuid.uuid4()),
         ]
@@ -150,3 +159,88 @@ def test_migrated_schema_enforces_the_data_integrity_rules(migrated_app: Flask) 
             db.session.commit()
         db.session.rollback()
         db.session.remove()
+
+
+def test_company_history_backfills_existing_events(make_app, empty_database_url):
+    application = make_app(database_url=empty_database_url)
+    company_id, shipment_id, document_id = (uuid.uuid4().hex for _ in range(3))
+    ids = [uuid.uuid4().hex for _ in range(3)]
+    with application.app_context():
+        flask_migrate.upgrade(revision="customer_accounts")
+        # Use reflected historical tables: the current ORM has columns not present yet.
+        metadata = sa.MetaData()
+        company = sa.Table("companies", metadata, autoload_with=db.engine)
+        user = sa.Table("users", metadata, autoload_with=db.engine)
+        shipment = sa.Table("shipments", metadata, autoload_with=db.engine)
+        document = sa.Table("documents", metadata, autoload_with=db.engine)
+        logs = sa.Table("audit_logs", metadata, autoload_with=db.engine)
+        user_id = uuid.uuid4().hex
+        now = datetime.now(UTC).replace(tzinfo=None)
+        with db.engine.begin() as connection:
+            connection.execute(
+                company.insert().values(
+                    id=company_id, name="قدیمی", company_code="LEGACY", created_at=now, updated_at=now
+                )
+            )
+            connection.execute(
+                user.insert().values(
+                    id=user_id,
+                    company_id=company_id,
+                    username="legacy-worker",
+                    full_name="کارمند",
+                    password_hash="unused",
+                    role="EMPLOYEE",
+                    created_at=now,
+                    updated_at=now,
+                )
+            )
+            connection.execute(
+                shipment.insert().values(
+                    id=shipment_id,
+                    company_id=company_id,
+                    tracking_code="LEGACY-CODE",
+                    tracking_code_type="AUTO",
+                    created_by=user_id,
+                    created_at=now,
+                    updated_at=now,
+                )
+            )
+            connection.execute(
+                document.insert().values(
+                    id=document_id,
+                    shipment_id=shipment_id,
+                    uploaded_by=user_id,
+                    original_name="old.bin",
+                    storage_name="old",
+                    storage_path="old",
+                    mime_type="application/octet-stream",
+                    extension="bin",
+                    file_size=1,
+                    checksum="0" * 64,
+                    is_customer_visible=True,
+                    created_at=now,
+                )
+            )
+            for log_id, entity_type, entity_id, action in zip(
+                ids,
+                ("company", "shipment", "document"),
+                (company_id, shipment_id, document_id),
+                ("COMPANY_CREATED", "SHIPMENT_UPDATED", "DOCUMENT_UPLOADED"),
+                strict=True,
+            ):
+                connection.execute(
+                    logs.insert().values(
+                        id=log_id,
+                        user_id=user_id,
+                        action=action,
+                        entity_type=entity_type,
+                        entity_id=str(uuid.UUID(entity_id)),
+                        created_at=now,
+                    )
+                )
+        flask_migrate.upgrade()
+        from app.models import AuditLog  # noqa: PLC0415
+
+        entries = db.session.scalars(sa.select(AuditLog)).all()
+        assert len(entries) == 3
+        assert {entry.company_id for entry in entries} == {uuid.UUID(company_id)}

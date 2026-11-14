@@ -7,6 +7,7 @@ from app.core.schemas import OutputSchema, PaginationQuerySchema
 
 
 class AuditLogQuerySchema(PaginationQuerySchema):
+    company_id = fields.UUID()
     action = fields.String(validate=fields.length(max=100))
     entity_type = fields.String(validate=fields.length(max=100))
     entity_id = fields.String(validate=fields.length(max=64))
@@ -22,6 +23,7 @@ class AuditUserSchema(OutputSchema):
 
 
 class AuditLogSchema(OutputSchema):
+    company_id = fields.UUID(allow_none=True)
     id = fields.UUID()
     action = fields.String()
     entity_type = fields.String()
@@ -30,4 +32,19 @@ class AuditLogSchema(OutputSchema):
     ip_address = fields.String(allow_none=True)
     request_id = fields.String(allow_none=True)
     user = fields.Nested(AuditUserSchema, allow_none=True)
+    created_at = fields.DateTime()
+
+
+class ActivityPersonSchema(OutputSchema):
+    id = fields.UUID()
+    full_name = fields.String()
+
+
+class CompanyActivitySchema(OutputSchema):
+    id = fields.UUID()
+    company_id = fields.UUID()
+    action = fields.String()
+    entity_type = fields.String()
+    entity_id = fields.String(allow_none=True)
+    user = fields.Nested(ActivityPersonSchema, allow_none=True)
     created_at = fields.DateTime()

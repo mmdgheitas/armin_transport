@@ -1,0 +1,4 @@
+# Optional compatibility for existing MySQL deployments or data export.
+-r requirements.txt
+PyMySQL==1.2.4
+cryptography==50.0.2

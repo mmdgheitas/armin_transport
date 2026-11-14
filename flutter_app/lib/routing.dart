@@ -13,6 +13,7 @@ abstract final class AppPaths {
   static const String companies = '/companies';
   static const String users = '/users';
   static const String productFields = '/product-fields';
+  static const String companyActivity = '/company-activity';
   static const String auditLogs = '/audit-logs';
   static const String profile = '/profile';
 
@@ -39,6 +40,7 @@ class NavEntry {
 const List<NavEntry> navEntries = [
   NavEntry(AppPaths.dashboard, 'داشبورد', 'dashboard:view'),
   NavEntry(AppPaths.shipments, 'محموله‌ها', 'shipment:view'),
+  NavEntry(AppPaths.companyActivity, 'سابقهٔ فعالیت شرکت', 'company_activity:view'),
   NavEntry(AppPaths.companies, 'شرکت‌ها', 'company:view'),
   NavEntry(AppPaths.users, 'کاربران', 'user:view'),
   // NavEntry(AppPaths.productFields, 'فیلدهای محموله', 'product_field:manage'),
@@ -92,8 +94,7 @@ String? redirectFor(
   // An address that is built into the app cannot be changed, so there is nothing to set up.
   if (path == AppPaths.setup) return serverIsFixed ? AppPaths.home : null;
   if (path == AppPaths.home)
-    return signedIn ? AppPaths.dashboard : AppPaths.track;
-  if (path == AppPaths.track) return null;
+    return signedIn ? AppPaths.dashboard : AppPaths.login;
   if (path == AppPaths.login)
     return signedIn ? safeNextLocation(location.queryParameters['next']) : null;
   return signedIn ? null : AppPaths.loginThen(location.toString());

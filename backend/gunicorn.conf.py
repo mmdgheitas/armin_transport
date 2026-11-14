@@ -1,10 +1,9 @@
 """Gunicorn configuration (production). Every value can be overridden via environment."""
 
-import multiprocessing
 import os
 
 bind = os.environ.get("BIND", "127.0.0.1:8000")
-workers = int(os.environ.get("WEB_CONCURRENCY", min(multiprocessing.cpu_count() * 2 + 1, 9)))
+workers = int(os.environ.get("WEB_CONCURRENCY", "1"))
 threads = int(os.environ.get("GUNICORN_THREADS", "4"))
 worker_class = "gthread"
 timeout = int(os.environ.get("GUNICORN_TIMEOUT", "120"))

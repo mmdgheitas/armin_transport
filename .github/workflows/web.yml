@@ -1,5 +1,5 @@
 # The web client: lint, unit tests, the production build, and the browser tests
-# against the real backend with a MySQL database.
+# against the real backend with an isolated SQLite3 database.
 name: Web client
 
 on:
@@ -67,21 +67,7 @@ jobs:
     needs: check
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: ci-root-password
-          MYSQL_DATABASE: armin_transport_test
-        ports: ["3306:3306"]
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -pci-root-password --silent"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=30
     env:
-      # The tests create and drop a database of their own next to this one; the password protects nothing.
-      E2E_DATABASE_URL: mysql+pymysql://root:ci-root-password@127.0.0.1:3306/armin_transport_test?charset=utf8mb4
       BACKEND_PYTHON: python
     defaults:
       run:

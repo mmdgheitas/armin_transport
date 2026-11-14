@@ -1,13 +1,13 @@
 /**
  * Starts the real backend for the end-to-end tests.
  *
- * Nothing is mocked: a scratch MySQL database is created and migrated with Alembic,
+ * Nothing is mocked: a scratch SQLite3 database is created and migrated with Alembic,
  * demo data is seeded, and Gunicorn serves the API together with the built web client
  * (web/dist) in production mode, the same way a single-server deployment runs.
  *
  * Environment:
- *   E2E_DATABASE_URL  MySQL URL (falls back to TEST_DATABASE_URL). The database user must be allowed
- *                     to create and drop "<database>_e2e_<random>".
+ *   E2E_DATABASE_URL  Optional MySQL compatibility URL (falls back to TEST_DATABASE_URL).
+ *                     Without it, tests use an isolated SQLite file in a temporary directory.
  *   BACKEND_PYTHON    Python interpreter that has the backend requirements installed
  *                     (default: backend/.venv/bin/python).
  */
@@ -103,8 +103,9 @@ async function waitUntilReady(baseUrl, child, output) {
  */
 export async function startBackend(settings = {}) {
   const adminUrl = process.env.E2E_DATABASE_URL ?? process.env.TEST_DATABASE_URL;
-  if (!adminUrl || !adminUrl.startsWith('mysql')) {
-    throw new Error('Set E2E_DATABASE_URL (or TEST_DATABASE_URL) to a MySQL URL, e.g. mysql+pymysql://user:password@127.0.0.1:3306/armin_transport_test');
+  const useMysql = adminUrl?.startsWith('mysql') ?? false;
+  if (adminUrl && !useMysql && !adminUrl.startsWith('sqlite')) {
+    throw new Error('E2E_DATABASE_URL must be a SQLite or optional MySQL URL.');
   }
   if (!existsSync(path.join(WEB_ROOT, 'dist', 'index.html'))) {
     throw new Error('web/dist is missing. Run "npm run build" before the end-to-end tests.');
@@ -112,7 +113,7 @@ export async function startBackend(settings = {}) {
 
   const python = pythonPath();
   const baseEnv = { PATH: process.env.PATH ?? '', HOME: process.env.HOME ?? '', LANG: 'C.UTF-8', PYTHONUNBUFFERED: '1' };
-  const databaseName = `${new URL(adminUrl.replace(/^mysql\+\w+:/, 'mysql:')).pathname.slice(1)}_e2e_${randomBytes(5).toString('hex')}`;
+  const databaseName = useMysql ? `${new URL(adminUrl.replace(/^mysql\+\w+:/, 'mysql:')).pathname.slice(1)}_e2e_${randomBytes(5).toString('hex')}` : null;
   const workDir = await mkdtemp(path.join(os.tmpdir(), 'armin-e2e-'));
   const port = await freePort();
   let child = null;
@@ -120,12 +121,14 @@ export async function startBackend(settings = {}) {
 
   const dropDatabase = () => run(python, ['-', 'drop', adminUrl, databaseName], { env: baseEnv, input: SCRATCH_DB_SCRIPT });
   const cleanUp = async () => {
-    await dropDatabase().catch((error) => console.error(`Could not drop ${databaseName}: ${error.message}`));
+    if (useMysql) await dropDatabase().catch((error) => console.error(`Could not drop ${databaseName}: ${error.message}`));
     await rm(workDir, { recursive: true, force: true });
   };
 
   try {
-    const databaseUrl = (await run(python, ['-', 'create', adminUrl, databaseName], { env: baseEnv, input: SCRATCH_DB_SCRIPT })).trim();
+    const databaseUrl = useMysql
+      ? (await run(python, ['-', 'create', adminUrl, databaseName], { env: baseEnv, input: SCRATCH_DB_SCRIPT })).trim()
+      : `sqlite:///${path.join(workDir, 'database.sqlite3')}`;
     const env = {
       ...baseEnv,
       FLASK_APP: 'wsgi:app',

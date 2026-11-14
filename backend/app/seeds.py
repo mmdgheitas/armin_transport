@@ -158,7 +158,11 @@ def seed_demo_data(services: Services, users: UserRepository, password: str) -> 
             continue
         company = services.companies.create(
             admin_actor,
-            {key: spec[key] for key in ("name", "company_code", "phone", "address")},
+            {
+                **{key: spec[key] for key in ("name", "company_code", "phone", "address")},
+                "username": f"company.{spec['company_code'].lower()}",
+                "password": password,
+            },
         )
         report.companies += 1
         employee_actor: Actor | None = None

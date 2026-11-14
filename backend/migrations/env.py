@@ -71,9 +71,22 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     with _engine().connect() as connection:
-        context.configure(connection=connection, target_metadata=_metadata(), **_configure_args())
-        with context.begin_transaction():
-            context.run_migrations()
+        sqlite = connection.dialect.name == "sqlite"
+        if sqlite:
+            # Batch ALTER recreates referenced tables. SQLite must disable FK
+            # enforcement *outside* a transaction, then validate the final schema.
+            connection.connection.driver_connection.execute("PRAGMA foreign_keys=OFF")
+        try:
+            context.configure(connection=connection, target_metadata=_metadata(), **_configure_args())
+            with context.begin_transaction():
+                context.run_migrations()
+                if sqlite and connection.exec_driver_sql("PRAGMA foreign_key_check").fetchall():
+                    raise RuntimeError("Migration produced foreign-key violations.")
+            connection.commit()
+        finally:
+            if sqlite:
+                connection.rollback()
+                connection.connection.driver_connection.execute("PRAGMA foreign_keys=ON")
 
 
 if context.is_offline_mode():

@@ -90,7 +90,7 @@ def build_services(settings: Settings) -> Services:
         code_generator=code_generator,
         audit=audit,
         auth=auth,
-        companies=CompanyService(session, audit, company_repository),
+        companies=CompanyService(session, audit, company_repository, settings, passwords, user_repository),
         users=UserService(session, settings, passwords, audit, auth, user_repository, company_repository),
         shipments=shipments,
         documents=documents,

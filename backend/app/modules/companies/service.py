@@ -9,14 +9,18 @@ from typing import Any
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
+from app.config import Settings
 from app.core.actor import Actor
 from app.core.errors import ConflictError, NotFoundError
 from app.core.pagination import Page
 from app.core.permissions import Permission
+from app.core.security import PasswordService
 from app.core.transactions import unit_of_work
-from app.models import Company
+from app.models import Company, User, UserRole
 from app.modules.audit_logs.service import AuditService
 from app.modules.companies.repository import CompanyRepository
+from app.modules.users.password_policy import validate_password
+from app.modules.users.repository import UserRepository, normalize_username
 
 _EDITABLE_FIELDS = ("name", "company_code", "phone", "address")
 
@@ -39,10 +43,21 @@ class CompanyDetail:
 
 
 class CompanyService:
-    def __init__(self, session: scoped_session[Session], audit: AuditService, companies: CompanyRepository) -> None:
+    def __init__(
+        self,
+        session: scoped_session[Session],
+        audit: AuditService,
+        companies: CompanyRepository,
+        settings: Settings,
+        passwords: PasswordService,
+        users: UserRepository,
+    ) -> None:
         self._session = session
         self._audit = audit
         self._companies = companies
+        self._settings = settings
+        self._passwords = passwords
+        self._users = users
 
     def _conflict(self) -> ConflictError:
         return ConflictError(
@@ -71,6 +86,15 @@ class CompanyService:
         )
 
     def create(self, actor: Actor, data: dict[str, Any]) -> Company:
+        username = normalize_username(data["username"])
+        validate_password(data["password"], username, self._settings)
+        if self._users.username_exists(username):
+            raise ConflictError(
+                "این نام کاربری قبلاً ثبت شده است.",
+                code="username_taken",
+                details={"fields": {"username": ["نام کاربری تکراری است."]}},
+            )
+        password_hash = self._passwords.hash(data["password"])
         code = normalize_company_code(data["company_code"])
         if self._companies.code_exists(code):
             raise self._conflict()
@@ -84,6 +108,17 @@ class CompanyService:
         try:
             with unit_of_work(self._session):
                 self._session.add(company)
+                self._session.flush()
+                self._session.add(
+                    User(
+                        username=username,
+                        password_hash=password_hash,
+                        full_name=company.name,
+                        role=UserRole.CUSTOMER,
+                        company_id=company.id,
+                        is_active=True,
+                    )
+                )
                 self._session.flush()
                 self._audit.record(
                     "COMPANY_CREATED",

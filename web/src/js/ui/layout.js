@@ -17,7 +17,7 @@ export function publicLayout({ content, headerLink = null, narrow = false }) {
     h(
       'header',
       { class: 'public-header' },
-      brand('#/track'),
+      brand('#/login'),
       headerLink && h('a', { class: 'btn btn-secondary btn-sm', href: headerLink.href }, icon(headerLink.iconName, { size: 16 }), headerLink.label),
     ),
     h('main', { class: `public-main ${narrow ? 'narrow' : ''}`.trim(), id: 'main' }, content),

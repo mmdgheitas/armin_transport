@@ -65,7 +65,7 @@ class UserService:
 
     def _get_employee(self, user_id: uuid.UUID) -> User:
         user = self.get(user_id)
-        if user.role is not UserRole.EMPLOYEE:
+        if user.role is UserRole.SUPER_ADMIN:
             raise PermissionDeniedError(
                 "حساب مدیر مرکزی از طریق این سرویس قابل تغییر نیست.", code="admin_account_protected"
             )
@@ -83,15 +83,20 @@ class UserService:
     def create_employee(self, actor: Actor, data: dict[str, Any]) -> User:
         username = normalize_username(data["username"])
         validate_password(data["password"], username, self._settings)
-        company = self._require_company(data["company_id"])
+        role = data.get("role", UserRole.EMPLOYEE)
+        company = None
+        if role is UserRole.CUSTOMER:
+            if not data.get("company_id"):
+                raise ValidationFailedError.single("company_id", "انتخاب شرکت برای حساب مشتری الزامی است.")
+            company = self._require_company(data["company_id"])
         if self._users.username_exists(username):
             raise self._username_conflict()
         user = User(
             username=username,
             full_name=data["full_name"],
             password_hash=self._passwords.hash(data["password"]),
-            role=UserRole.EMPLOYEE,
-            company_id=company.id,
+            role=data.get("role", UserRole.EMPLOYEE),
+            company_id=company.id if company else None,
             is_active=data.get("is_active", True),
         )
         try:
@@ -103,7 +108,11 @@ class UserService:
                     "user",
                     user.id,
                     actor_id=actor.user_id,
-                    metadata={"username": user.username, "company_id": str(company.id), "role": user.role.value},
+                    metadata={
+                        "username": user.username,
+                        "company_id": str(company.id) if company else None,
+                        "role": user.role.value,
+                    },
                 )
         except IntegrityError as exc:
             raise self._username_conflict() from exc
