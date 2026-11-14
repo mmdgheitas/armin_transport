@@ -145,9 +145,9 @@ class Settings:
         return self.env == "production"
 
     @property
-    def max_request_size_bytes(self) -> int:
+    def max_request_size_bytes(self) -> int | None:
         """Upper bound for a whole multipart request (all files plus form overhead)."""
-        return self.max_upload_size_bytes * self.max_files_per_upload + 1024 * 1024
+        return None
 
     @property
     def database_dialect(self) -> str:
@@ -275,8 +275,8 @@ def load_settings(
         argon2_memory_cost_kib=env.integer("ARGON2_MEMORY_COST_KIB", 1024 if is_testing else 65536, minimum=8),
         argon2_parallelism=env.integer("ARGON2_PARALLELISM", 1 if is_testing else 4, minimum=1),
         storage_root=Path(env.text("STORAGE_ROOT", str(default_storage))).expanduser(),
-        max_upload_size_bytes=env.integer("MAX_UPLOAD_SIZE_BYTES", 10 * 1024 * 1024, minimum=1024),
-        max_files_per_upload=env.integer("MAX_FILES_PER_UPLOAD", 10, minimum=1, maximum=50),
+        max_upload_size_bytes=0,
+        max_files_per_upload=12,
         allowed_upload_extensions=frozenset(
             item.lower().lstrip(".") for item in env.csv("ALLOWED_UPLOAD_EXTENSIONS", DEFAULT_ALLOWED_EXTENSIONS)
         ),

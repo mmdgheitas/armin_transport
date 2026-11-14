@@ -16,6 +16,13 @@ const SORT_OPTIONS = [
 export function shipmentsPage(ctx) {
   const { query, session } = ctx;
   const isGlobal = session.isGlobalScope;
+  if (isGlobal && !query.company_id) {
+    const companies = asyncBlock(ctx, () => loadAll(ctx, '/companies'), (items) =>
+      h('div', { class: 'stack' }, ...items.map((company) =>
+        h('a', { class: 'card card-body row-link', href: `#/shipments?company_id=${company.id}&status=ACTIVE` }, company.name))));
+    return { title: 'محموله‌ها بر اساس شرکت', element: h('div', {},
+      pageHeader({ title: 'محموله‌ها بر اساس شرکت', description: 'برای مشاهدهٔ بارهای فعال، شرکت را انتخاب کنید.' }), companies.element) };
+  }
   const canCreate = session.can('shipment:create');
   const hasFilters = ['q', 'status', 'company_id', 'tracking_code_type', 'created_from', 'created_to'].some((name) => query[name]);
 

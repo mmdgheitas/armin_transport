@@ -224,7 +224,7 @@ def copy_with_limit(source: IO[bytes], destination: IO[bytes], max_bytes: int) -
     size = 0
     while chunk := source.read(CHUNK_SIZE):
         size += len(chunk)
-        if size > max_bytes:
+        if max_bytes and size > max_bytes:
             limit_mb = max_bytes / (1024 * 1024)
             raise UploadRejectedError(
                 "file_too_large",

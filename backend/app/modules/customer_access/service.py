@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
+from flask import g
 from sqlalchemy.orm import Session, scoped_session
 
 from app.config import Settings
@@ -105,6 +106,9 @@ class CustomerAccessService:
         )
 
     def _is_customer_accessible(self, shipment: Shipment) -> bool:
+        actor = getattr(g, "actor", None)
+        if actor is None or actor.role.value == "EMPLOYEE" or not actor.can_access_company(shipment.company_id):
+            return False
         if not shipment.company.is_active:
             return False
         if shipment.status is ShipmentStatus.ARCHIVED:
@@ -124,6 +128,7 @@ class CustomerAccessService:
         self._limiter.enforce(
             ACCESS_IP_SCOPE, self._settings.rate_limit_customer_access_ip, client_ip or _UNKNOWN_CLIENT
         )
+        self._session.rollback()  # Refresh the snapshot after the rate-limit transaction.
         if _TOKEN_PATTERN.fullmatch(raw_token) is None:
             raise CustomerSessionInvalidError()
         access_session = self._sessions.get_by_token_hash(hash_token(raw_token))
@@ -144,6 +149,9 @@ class CustomerAccessService:
         failure_rule = self._settings.rate_limit_customer_lookup_failures_ip
         self._limiter.ensure_available(LOOKUP_FAILURE_SCOPE, failure_rule, key)
 
+        # Authentication reads before the independent rate-limit transaction.
+        # Release that read snapshot before creating the access session (SQLite too).
+        self._session.rollback()
         code = normalize_tracking_code(raw_code)
         shipment = self._find_shipment(code)
         if shipment is None:

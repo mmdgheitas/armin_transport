@@ -14,6 +14,7 @@ import 'core/session.dart';
 import 'features/audit/audit_logs_page.dart';
 import 'features/auth/login_screen.dart';
 import 'features/companies/companies_page.dart';
+import 'features/companies/company_activity_page.dart';
 import 'features/dashboard/dashboard_page.dart';
 import 'features/product_fields/product_fields_page.dart';
 import 'features/profile/profile_page.dart';
@@ -103,6 +104,7 @@ GoRouter buildRouter(AppSession app, {String? initialLocation}) => GoRouter(
             }),
           ],
         ),
+        _section(AppPaths.companyActivity, 'company_activity:view', (state) => CompanyActivityPage(companyId: state.uri.queryParameters['company_id'])),
         _section(AppPaths.companies, 'company:view', (state) => const CompaniesPage()),
         _section(AppPaths.users, 'user:view', (state) {
           final companyId = state.uri.queryParameters['company_id'];

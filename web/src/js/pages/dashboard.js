@@ -1,3 +1,4 @@
+import { actionLabel } from './audit-logs.js';
 import { h, icon } from '../core/dom.js';
 import { formatDateTime, formatNumber } from '../core/format.js';
 import { emptyBlock } from '../ui/feedback.js';
@@ -48,6 +49,12 @@ export function dashboardPage(ctx) {
           summary.companies && stat('briefcase', '', summary.companies.active, `شرکت فعال از ${formatNumber(summary.companies.total)} شرکت`),
           summary.employees && stat('users', 'green', summary.employees.active, `کارمند فعال از ${formatNumber(summary.employees.total)} کارمند`),
         ),
+        summary.company && h('section', { class: 'card card-body stack' },
+          h('h2', {}, 'پنل شرکت ' + summary.company.name),
+          summary.company.last_activity && h('p', {}, `آخرین فعالیت: ${actionLabel(summary.company.last_activity.action)} · ${summary.company.last_activity.user?.full_name ?? 'سامانه'} · ${formatDateTime(summary.company.last_activity.created_at)}`),
+          h('div', { class: 'row' },
+            h('a', { class: 'btn', href: '#/shipments' }, 'همهٔ محموله‌ها و جست‌وجو'),
+            h('a', { class: 'btn btn-secondary', href: '#/company-activity' }, 'سابقهٔ فعالیت شرکت'))),
         h(
           'section',
           { class: 'card' },

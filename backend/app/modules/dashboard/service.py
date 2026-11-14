@@ -63,12 +63,14 @@ class DashboardService:
         total, active = self._session.execute(statement).one()
         return ShipmentCount(total=int(total), active=int(active), archived=int(total) - int(active))
 
-    def _document_count(self, company_id: uuid.UUID | None) -> int:
+    def _document_count(self, company_id: uuid.UUID | None, actor: Actor) -> int:
         statement = select(func.count()).select_from(Document).where(Document.deleted_at.is_(None))
         if company_id is not None:
             statement = statement.join(Shipment, Document.shipment_id == Shipment.id).where(
                 Shipment.company_id == company_id
             )
+        if actor.role is UserRole.EMPLOYEE:
+            statement = statement.where(Document.uploaded_by == actor.user_id)
         return int(self._session.scalar(statement) or 0)
 
     def summary(self, actor: Actor) -> DashboardSummary:
@@ -82,6 +84,6 @@ class DashboardService:
             companies=self._active_count(Company) if is_global else None,
             employees=self._active_count(User, User.role == UserRole.EMPLOYEE) if is_global else None,
             shipments=self._shipment_count(company_id),
-            documents=self._document_count(company_id),
+            documents=self._document_count(company_id, actor),
             recent_shipments=list(recent.items),
         )

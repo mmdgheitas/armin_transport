@@ -29,12 +29,12 @@ TAG = "customer"
         "پاسخ خطا برای همهٔ حالت‌های ناموفق یکسان است و این عملیات محدودیت نرخ دارد."
     ),
     tag=TAG,
-    auth="public",
+    auth="bearer",
     body=CustomerLookupSchema,
     response=CustomerAccessGrantSchema,
     errors=(404,),
 )
-def lookup(body: dict[str, Any]) -> ApiResult:
+def lookup(actor: Any, body: dict[str, Any]) -> ApiResult:
     grant = get_services().customer_access.lookup(body["tracking_code"], client_ip())
     return ApiResult(grant, message="محموله یافت شد.")
 

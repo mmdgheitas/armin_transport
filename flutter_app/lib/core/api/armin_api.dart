@@ -300,7 +300,6 @@ class ArminApi {
   Future<CustomerGrant> customerLookup(String trackingCode) async {
     final result = await client.post(
       '/customer/lookup',
-      auth: false,
       json: <String, dynamic>{'tracking_code': trackingCode},
     );
     final grant = CustomerGrant.fromJson(result.data);
@@ -311,20 +310,20 @@ class ArminApi {
   String _access(CustomerGrant grant, String rest) => '/customer/access/${_id(grant.accessToken)}$rest';
 
   Future<CustomerShipment> customerShipment(CustomerGrant grant) async =>
-      CustomerShipment.fromJson((await client.get(_access(grant, '/shipment'), auth: false)).json);
+      CustomerShipment.fromJson((await client.get(_access(grant, '/shipment'))).json);
 
   Future<PageOf<CustomerDocument>> customerDocuments(CustomerGrant grant, {int page = 1, int? perPage}) async {
-    final result = await client.get(_access(grant, '/documents'), auth: false, query: {'page': page, 'per_page': perPage});
+    final result = await client.get(_access(grant, '/documents'), query: {'page': page, 'per_page': perPage});
     return PageOf<CustomerDocument>.fromJson(result.data, CustomerDocument.fromJson);
   }
 
   Future<DownloadedFile> downloadCustomerDocument(CustomerGrant grant, String documentId) =>
-      client.download(_access(grant, '/documents/${_id(documentId)}/download'), auth: false);
+      client.download(_access(grant, '/documents/${_id(documentId)}/download'));
 
   /// Ends the access before it expires (best effort: it expires on its own in any case).
   Future<void> endCustomerAccess(CustomerGrant grant) async {
     try {
-      await client.post(_access(grant, '/revoke'), auth: false);
+      await client.post(_access(grant, '/revoke'));
     } on ApiError {
       // Nothing to do: the grant is forgotten by the app either way.
     }
