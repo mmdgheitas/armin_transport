@@ -13,6 +13,12 @@ _PASSWORD_LENGTH = fields.length(min=1, max=128)
 
 
 class UserCreateSchema(InputSchema):
+    role = fields.Enum(
+        UserRole,
+        by_value=True,
+        load_default=UserRole.EMPLOYEE,
+        validate=fields.one_of([UserRole.EMPLOYEE, UserRole.CUSTOMER]),
+    )
     username = fields.String(required=True, validate=fields.regexp(USERNAME_PATTERN, _USERNAME_MESSAGE))
     full_name = fields.String(required=True, validate=fields.length(min=2, max=200))
     password = fields.String(required=True, strip=False, validate=_PASSWORD_LENGTH)

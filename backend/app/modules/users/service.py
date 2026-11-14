@@ -65,7 +65,7 @@ class UserService:
 
     def _get_employee(self, user_id: uuid.UUID) -> User:
         user = self.get(user_id)
-        if user.role is not UserRole.EMPLOYEE:
+        if user.role is UserRole.SUPER_ADMIN:
             raise PermissionDeniedError(
                 "حساب مدیر مرکزی از طریق این سرویس قابل تغییر نیست.", code="admin_account_protected"
             )
@@ -90,7 +90,7 @@ class UserService:
             username=username,
             full_name=data["full_name"],
             password_hash=self._passwords.hash(data["password"]),
-            role=UserRole.EMPLOYEE,
+            role=data.get("role", UserRole.EMPLOYEE),
             company_id=company.id,
             is_active=data.get("is_active", True),
         )

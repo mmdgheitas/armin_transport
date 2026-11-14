@@ -82,6 +82,18 @@ def permissions_for_role(role: UserRole, settings: Settings) -> frozenset[Permis
     if role is UserRole.SUPER_ADMIN:
         return frozenset(Permission)
 
+    if role is UserRole.CUSTOMER:
+        return frozenset(
+            {
+                Permission.DASHBOARD_VIEW,
+                Permission.SHIPMENT_VIEW,
+                Permission.DOCUMENT_VIEW,
+                Permission.DOCUMENT_DOWNLOAD,
+                Permission.PRODUCT_VALUE_VIEW,
+                Permission.PRODUCT_FIELD_VIEW,
+            }
+        )
+
     permissions = set(_EMPLOYEE_BASE)
     if settings.employee_can_use_manual_tracking_code:
         permissions.add(Permission.TRACKING_CODE_MANUAL)

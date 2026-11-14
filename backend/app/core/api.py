@@ -155,11 +155,12 @@ def endpoint(
         @wraps(view)
         def wrapper(**url_params: Any) -> Any:
             kwargs: dict[str, Any] = dict(url_params)
-            if spec.auth == "bearer":
+            if spec.auth in {"bearer", "customer_token"}:
                 actor = get_services().auth.authenticate(_bearer_token())
                 g.actor = actor
                 actor.require(*spec.permissions)
-                kwargs["actor"] = actor
+                if spec.auth == "bearer":
+                    kwargs["actor"] = actor
             if spec.query is not None:
                 kwargs["query"] = spec.query().load(request.args.to_dict(flat=True))
             if spec.body is not None:

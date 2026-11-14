@@ -27,6 +27,7 @@ export function usersPage(ctx) {
         maxlength: 100,
         hint: 'حروف انگلیسی، رقم، نقطه، خط تیره و زیرخط؛ دست‌کم ۳ نویسه.',
       }),
+      role: selectField({ label: 'نوع حساب', value: user?.role ?? 'EMPLOYEE', options: [{ value: 'EMPLOYEE', label: 'کارمند' }, { value: 'CUSTOMER', label: 'مشتری' }] }),
       company_id: selectField({ label: 'شرکت', value: user?.company_id ?? query.company_id ?? '', required: true, placeholder: 'انتخاب کنید', options: companyOptions(companies) }),
       ...(isNew ? { password: passwordField({ label: 'رمز عبور اولیه', autocomplete: 'new-password', hint: passwordHint }) } : {}),
       is_active: checkboxField({ label: 'حساب کاربری فعال است', checked: user?.is_active ?? true, hint: 'با غیرفعال شدن حساب، همهٔ نشست‌های کاربر بسته می‌شود.' }),
@@ -45,7 +46,7 @@ export function usersPage(ctx) {
           ...(isNew ? { password: 'رمز عبور را وارد کنید.' } : {}),
         }),
       async onSubmit(values) {
-        const payload = { full_name: values.full_name.trim(), username: values.username.trim(), company_id: values.company_id };
+        const payload = { ...(!user ? { role: values.role } : {}), full_name: values.full_name.trim(), username: values.username.trim(), company_id: values.company_id };
         if (canSetActive) payload.is_active = values.is_active;
         if (isNew) payload.password = values.password;
         const { message } = isNew ? await api.post('/users', { json: payload }) : await api.patch(`/users/${user.id}`, { json: payload });

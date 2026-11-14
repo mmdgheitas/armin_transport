@@ -13,7 +13,7 @@ import { trackPage } from './pages/track.js';
 import { usersPage } from './pages/users.js';
 
 export const ROUTES = [
-  { path: '/track', page: trackPage, layout: 'public' },
+  { path: '/track', page: trackPage, auth: true },
   { path: '/login', page: loginPage, layout: 'public', narrow: true, guestOnly: true },
   { path: '/dashboard', page: dashboardPage, auth: true, permission: 'dashboard:view' },
   { path: '/shipments', page: shipmentsPage, auth: true, permission: 'shipment:view' },

@@ -38,16 +38,23 @@ class DocumentRepository:
                 Document.id == document_id,
                 Document.shipment_id == shipment_id,
                 Document.deleted_at.is_(None),
-                Document.is_customer_visible.is_(True),
             )
         )
 
     def list_for_shipment(
-        self, shipment_id: uuid.UUID, page: int, per_page: int, *, customer_visible_only: bool = False
+        self,
+        shipment_id: uuid.UUID,
+        page: int,
+        per_page: int,
+        *,
+        customer_visible_only: bool = False,
+        uploaded_by: uuid.UUID | None = None,
     ) -> Page[Document]:
         statement = select(Document).where(Document.shipment_id == shipment_id, Document.deleted_at.is_(None))
+        if uploaded_by is not None:
+            statement = statement.where(Document.uploaded_by == uploaded_by)
         if customer_visible_only:
-            statement = statement.where(Document.is_customer_visible.is_(True))
+            pass  # All shipment documents are visible to its customer.
         statement = statement.order_by(Document.created_at.desc(), Document.id.desc())
         return paginate(self._session, statement, page, per_page)
 
@@ -58,7 +65,6 @@ class DocumentRepository:
             .where(
                 Document.shipment_id == shipment_id,
                 Document.deleted_at.is_(None),
-                Document.is_customer_visible.is_(True),
             )
         )
         return int(self._session.scalar(statement) or 0)

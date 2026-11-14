@@ -20,7 +20,7 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Model):
         UniqueConstraint("username"),
         # A SUPER_ADMIN is global (no company); an EMPLOYEE always belongs to a company.
         CheckConstraint(
-            "(role = 'SUPER_ADMIN' AND company_id IS NULL) OR (role = 'EMPLOYEE' AND company_id IS NOT NULL)",
+            "(role = 'SUPER_ADMIN' AND company_id IS NULL) OR (role IN ('EMPLOYEE', 'CUSTOMER') AND company_id IS NOT NULL)",
             name="role_company_consistency",
         ),
         TABLE_OPTIONS,
