@@ -6,7 +6,9 @@
 #   - when the workflow is started by hand,
 #   - on any other branch when the commit message contains "[build]".
 # A build does not wait for the tests: it is there to try the app out, also while a test still
-# fails. A version tag publishes the builds as a GitHub release, and that needs everything green.
+# fails. When everything is green, the builds are packaged the way a release offers them
+# (an APK and a ZIP of the Windows program); a version tag publishes these two files as a
+# GitHub release.
 #
 # The analyzer fails the check for errors and warnings. Its hints (style) do not fail it; they are
 # attached to the commit as a check run named "diag:flutter:analyze.txt".
@@ -50,7 +52,7 @@ jobs:
         shell: bash
         working-directory: flutter_app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -115,8 +117,8 @@ jobs:
         shell: bash
         working-directory: flutter_app
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
@@ -155,7 +157,7 @@ jobs:
           flutter build apk --release "${defines[@]}" 2>&1 | tee "$RUNNER_TEMP/android-build.log"
           mkdir -p "$RUNNER_TEMP/android"
           cp build/app/outputs/flutter-apk/app-release.apk "$RUNNER_TEMP/android/armin-transport.apk"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: armin-transport-android
           path: ${{ runner.temp }}/android/armin-transport.apk
@@ -179,7 +181,7 @@ jobs:
         shell: bash
         working-directory: flutter_app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -206,7 +208,7 @@ jobs:
             if (Test-Path $source) { Copy-Item $source $release } else { Write-Host "::warning::$name was not found" }
           }
           Get-ChildItem $release | Format-Table Name, Length
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: armin-transport-windows
           path: flutter_app/build/windows/x64/runner/Release
@@ -219,25 +221,39 @@ jobs:
         run: node ../tools/ci/publish-check.mjs windows "$RUNNER_TEMP/windows-build.log"
 
   release:
-    name: Publish the release
+    name: Package and publish
+    # Runs after every build, so that packaging is not tried for the first time on the day of a
+    # release. Only a version tag publishes; that step is what the write permission is for.
     needs: [check, android, windows]
-    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
-          path: artifacts
-      - name: Create the release
+          name: armin-transport-android
+          path: artifacts/android
+      - uses: actions/download-artifact@v8
+        with:
+          name: armin-transport-windows
+          path: artifacts/windows
+      - name: Package
+        run: |
+          # A version tag names the files; any other build is named after its commit.
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then version="$GITHUB_REF_NAME"; else version="${GITHUB_SHA::7}"; fi
+          for name in armin_transport.exe flutter_windows.dll data/app.so data/icudtl.dat data/flutter_assets; do
+            if [ ! -e "artifacts/windows/$name" ]; then echo "::error::The Windows build has no $name"; exit 1; fi
+          done
+          mkdir release
+          mv artifacts/android/armin-transport.apk "release/armin-transport-android-$version.apk"
+          (cd artifacts/windows && zip -qr "../../release/armin-transport-windows-x64-$version.zip" .)
+          ls -l release
+          unzip -l "release/armin-transport-windows-x64-$version.zip" | tail -n 1
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cd artifacts
-          apk="armin-transport-android-$GITHUB_REF_NAME.apk"
-          zip="armin-transport-windows-x64-$GITHUB_REF_NAME.zip"
-          mv armin-transport-android/armin-transport.apk "$apk"
-          (cd armin-transport-windows && zip -qr "../$zip" .)
-          gh release create "$GITHUB_REF_NAME" "$apk" "$zip" \
+          gh release create "$GITHUB_REF_NAME" release/* \
             --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
