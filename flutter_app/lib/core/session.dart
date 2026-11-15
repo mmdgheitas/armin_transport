@@ -40,6 +40,8 @@ class AppSession extends ChangeNotifier {
       if (stored != null) serverUrl = ServerAddress.parse(stored).baseUrl;
     }
 
+    serverUrl ??= defaultApiBaseUrl;
+
     AuthSession? auth;
     final storedSession = await _read(storage, sessionStorageKey);
     if (storedSession != null && serverUrl != null) {

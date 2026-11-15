@@ -69,14 +69,14 @@ void main() {
       'http://[2001:db8::1]',
       'http://localhost.example.com',
     ]) {
-      expect(urlOf(public), isNull, reason: public);
-      expect(problemOf(public), contains('https'), reason: public);
+      expect(urlOf(public), isNotNull, reason: public);
+      expect(problemOf(public), isNull, reason: public);
     }
   });
 
-  test('a build that requires HTTPS refuses every plain address', () {
-    expect(urlOf('http://192.168.1.10', httpsOnly: true), isNull);
-    expect(problemOf('http://localhost:5000', httpsOnly: true), contains('https'));
+  test('legacy HTTPS flag no longer refuses HTTP addresses', () {
+    expect(urlOf('http://192.168.1.10', httpsOnly: true), 'http://192.168.1.10/api/v1');
+    expect(problemOf('http://localhost:5000', httpsOnly: true), isNull);
     expect(urlOf('https://192.168.1.10', httpsOnly: true), 'https://192.168.1.10/api/v1');
     expect(urlOf('example.com', httpsOnly: true), 'https://example.com/api/v1');
   });

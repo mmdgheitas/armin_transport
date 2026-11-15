@@ -180,7 +180,7 @@ class _PasswordFieldState extends State<PasswordField> {
         onSubmitted: widget.onSubmitted,
         decoration: InputDecoration(
           errorText: widget.error,
-          helperText: widget.hint,
+          helperText: widget.hint ?? '۱ تا ۱۲۸ نویسه؛ فاصله‌ها بخشی از رمز هستند.',
           counterText: '',
           suffixIcon: IconButton(
             tooltip: _visible ? 'پنهان کردن رمز' : 'نمایش رمز',

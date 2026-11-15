@@ -1,4 +1,4 @@
-import { h, icon } from '../core/dom.js';
+import { h } from '../core/dom.js';
 import { safeNextHash } from '../core/router.js';
 import { buildForm, passwordField, requiredProblems, textField } from '../ui/forms.js';
 import { toast } from '../ui/feedback.js';
@@ -23,17 +23,15 @@ export function loginPage(ctx) {
   setTimeout(() => form.fields.username.focus(), 0);
 
   return {
-    title: 'ورود کارکنان',
-    headerLink: { href: '#/track', label: 'رهگیری محموله', iconName: 'search' },
+    title: 'ورود به پنل کاربری',
     element: h(
       'div',
       { class: 'card card-elevated' },
       h(
         'div',
         { class: 'card-body stack' },
-        h('div', {}, h('h1', {}, 'ورود کارکنان'), h('p', { class: 'muted' }, 'برای ورود به پنل مدیریت محموله‌ها، نام کاربری و رمز عبور خود را وارد کنید.')),
+        h('div', {}, h('h1', {}, 'ورود به پنل کاربری'), h('p', { class: 'muted' }, 'برای ورود به پنل مدیریت محموله‌ها، نام کاربری و رمز عبور خود را وارد کنید.')),
         form.element,
-        h('p', { class: 'small muted' }, icon('info', { size: 14 }), ' مشتری هستید؟ ', h('a', { href: '#/track' }, 'محمولهٔ خود را با کد رهگیری پیدا کنید.')),
       ),
     ),
   };

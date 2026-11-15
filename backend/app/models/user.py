@@ -20,13 +20,14 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Model):
         UniqueConstraint("username"),
         # A SUPER_ADMIN is global (no company); an EMPLOYEE always belongs to a company.
         CheckConstraint(
-            "(role = 'SUPER_ADMIN' AND company_id IS NULL) OR (role = 'EMPLOYEE' AND company_id IS NOT NULL)",
+            "(role = 'SUPER_ADMIN' AND company_id IS NULL) OR role = 'EMPLOYEE' OR (role = 'CUSTOMER' AND company_id IS NOT NULL)",
             name="role_company_consistency",
         ),
         TABLE_OPTIONS,
     )
 
     company_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("companies.id", ondelete="RESTRICT"), index=True)
+    country: Mapped[str | None] = mapped_column(String(2))
     username: Mapped[str] = mapped_column(String(100), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(200), nullable=False)

@@ -7,7 +7,7 @@ import pytest
 from app.config import ConfigError, RateLimitRule, engine_options, load_settings
 
 _PROD_ENV = {
-    "DATABASE_URL": "mysql+pymysql://user:pw@db.internal:3306/armin_transport",
+    "DATABASE_URL": "sqlite:////var/lib/armin-transport/armin_transport.sqlite3",
     "JWT_SECRET_KEY": "x" * 48,
     "STORAGE_ROOT": "/var/lib/armin-transport/storage",
 }
@@ -29,9 +29,10 @@ def test_testing_uses_test_database_url_never_the_main_database() -> None:
     assert load_settings("testing", environ={"DATABASE_URL": environ["DATABASE_URL"]}).database_dialect == "sqlite"
 
 
-def test_development_requires_database_url() -> None:
-    with pytest.raises(ConfigError, match="DATABASE_URL"):
-        load_settings("development", environ={})
+def test_development_defaults_to_a_persistent_private_sqlite_file() -> None:
+    settings = load_settings("development", environ={})
+    assert settings.database_dialect == "sqlite"
+    assert settings.database_url.endswith("/backend/instance/armin_transport.sqlite3")
 
 
 def test_unknown_environment_is_rejected() -> None:
@@ -53,7 +54,9 @@ def test_production_accepts_a_complete_configuration() -> None:
         ({"JWT_SECRET_KEY": ""}, "JWT_SECRET_KEY"),
         ({"JWT_SECRET_KEY": "short"}, "JWT_SECRET_KEY"),
         ({"JWT_SECRET_KEY": "change-me"}, "JWT_SECRET_KEY"),
-        ({"DATABASE_URL": "sqlite:///prod.db"}, "MySQL"),
+        ({"DATABASE_URL": "sqlite:///prod.db"}, "absolute path"),
+        ({"DATABASE_URL": "sqlite:///:memory:"}, "persistent"),
+        ({"DATABASE_URL": "sqlite://"}, "persistent"),
         ({"STORAGE_ROOT": "relative/storage"}, "STORAGE_ROOT"),
         ({"CORS_ALLOWED_ORIGINS": "*"}, "CORS_ALLOWED_ORIGINS"),
     ],
@@ -71,8 +74,6 @@ def test_debug_can_never_be_enabled_in_production() -> None:
 @pytest.mark.parametrize(
     ("name", "value"),
     [
-        ("MAX_UPLOAD_SIZE_BYTES", "ten"),
-        ("MAX_UPLOAD_SIZE_BYTES", "10"),
         ("EMPLOYEE_CAN_DELETE_DOCUMENTS", "maybe"),
         ("RATE_LIMIT_LOGIN_IP", "30"),
         ("RATE_LIMIT_LOGIN_IP", "0/60"),
@@ -121,7 +122,7 @@ def test_business_rules_are_configurable() -> None:
     )
     assert settings.employee_can_use_manual_tracking_code is True
     assert settings.employee_can_delete_documents is True
-    assert settings.max_upload_size_bytes == 2048
+    assert settings.max_upload_size_bytes == 0  # Uploads are unlimited by business policy.
     assert settings.allowed_upload_extensions == frozenset({"pdf", "png"})
     assert settings.customer_session_ttl_seconds == 300
 
@@ -131,7 +132,9 @@ def test_rate_limit_rule_parsing() -> None:
 
 
 def test_mysql_engine_enforces_strict_mode_utc_and_read_committed() -> None:
-    options = engine_options(load_settings("production", environ=_PROD_ENV))
+    options = engine_options(
+        load_settings("production", environ={**_PROD_ENV, "DATABASE_URL": "mysql+pymysql://u:p@h/db"})
+    )
     assert options["isolation_level"] == "READ COMMITTED"
     assert options["pool_pre_ping"] is True
     init_command = options["connect_args"]["init_command"]
@@ -189,10 +192,10 @@ def test_cors_origins_must_be_bare_origins() -> None:
 @pytest.mark.parametrize(
     "url", ["postgresql://u:p@h/db", "mariadb+pymysql://u:p@h/db", "oracle://u:p@h/db", "not-a-url"]
 )
-def test_only_mysql_and_the_sqlite_fallback_are_supported(url: str) -> None:
-    with pytest.raises(ConfigError, match="DATABASE_URL must point to MySQL"):
+def test_only_sqlite_and_optional_mysql_are_supported(url: str) -> None:
+    with pytest.raises(ConfigError, match="DATABASE_URL must point to SQLite"):
         load_settings("development", environ={"DATABASE_URL": url})
-    with pytest.raises(ConfigError, match="DATABASE_URL must point to MySQL"):
+    with pytest.raises(ConfigError, match="DATABASE_URL must point to SQLite"):
         load_settings("testing", environ={"TEST_DATABASE_URL": url})
 
 

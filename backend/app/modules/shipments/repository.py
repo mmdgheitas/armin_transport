@@ -10,7 +10,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, scoped_session
 
 from app.core.pagination import Page, escape_like, paginate
-from app.models import Document, Shipment, ShipmentStatus, TrackingCodeHistory, TrackingCodeType
+from app.models import Document, Shipment, ShipmentAssignment, ShipmentStatus, TrackingCodeHistory, TrackingCodeType
 from app.modules.shipments.tracking_codes import normalize_tracking_code
 
 SORT_OPTIONS = {
@@ -59,11 +59,19 @@ class ShipmentRepository:
         tracking_code_type: TrackingCodeType | None = None,
         q: str | None = None,
         created_by: uuid.UUID | None = None,
+        assigned_user_id: uuid.UUID | None = None,
         created_from: datetime | None = None,
         created_to: datetime | None = None,
         sort: str = DEFAULT_SORT,
     ) -> Page[Shipment]:
         statement = select(Shipment)
+        if assigned_user_id is not None:
+            statement = statement.where(
+                (Shipment.transport_enabled.is_(False))
+                | Shipment.id.in_(
+                    select(ShipmentAssignment.shipment_id).where(ShipmentAssignment.user_id == assigned_user_id)
+                )
+            )
         if company_id is not None:
             statement = statement.where(Shipment.company_id == company_id)
         if status is not None:
@@ -88,7 +96,9 @@ class ShipmentRepository:
         statement = statement.order_by(*SORT_OPTIONS.get(sort, SORT_OPTIONS[DEFAULT_SORT]))
         return paginate(self._session, statement, page, per_page)
 
-    def document_counts(self, shipment_ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, int]:
+    def document_counts(
+        self, shipment_ids: Sequence[uuid.UUID], uploaded_by: uuid.UUID | None = None
+    ) -> dict[uuid.UUID, int]:
         if not shipment_ids:
             return {}
         statement = (
@@ -96,6 +106,8 @@ class ShipmentRepository:
             .where(Document.shipment_id.in_(shipment_ids), Document.deleted_at.is_(None))
             .group_by(Document.shipment_id)
         )
+        if uploaded_by is not None:
+            statement = statement.where(Document.uploaded_by == uploaded_by)
         return {shipment_id: int(count) for shipment_id, count in self._session.execute(statement).all()}
 
     def history(self, shipment_id: uuid.UUID, page: int, per_page: int) -> Page[TrackingCodeHistory]:

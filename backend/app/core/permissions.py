@@ -55,10 +55,13 @@ class Permission(enum.StrEnum):
     CUSTOMER_SESSION_REVOKE = "customer_session:revoke"
 
     AUDIT_LOG_VIEW = "audit_log:view"
+    COMPANY_ACTIVITY_VIEW = "company_activity:view"
 
 
 _EMPLOYEE_BASE: frozenset[Permission] = frozenset(
     {
+        Permission.GLOBAL_SCOPE,
+        Permission.COMPANY_VIEW,
         Permission.DASHBOARD_VIEW,
         Permission.SHIPMENT_VIEW,
         Permission.SHIPMENT_CREATE,
@@ -81,6 +84,19 @@ def permissions_for_role(role: UserRole, settings: Settings) -> frozenset[Permis
     """Return the effective permission set of ``role`` under the current settings."""
     if role is UserRole.SUPER_ADMIN:
         return frozenset(Permission)
+
+    if role is UserRole.CUSTOMER:
+        return frozenset(
+            {
+                Permission.COMPANY_ACTIVITY_VIEW,
+                Permission.DASHBOARD_VIEW,
+                Permission.SHIPMENT_VIEW,
+                Permission.DOCUMENT_VIEW,
+                Permission.DOCUMENT_DOWNLOAD,
+                Permission.PRODUCT_VALUE_VIEW,
+                Permission.PRODUCT_FIELD_VIEW,
+            }
+        )
 
     permissions = set(_EMPLOYEE_BASE)
     if settings.employee_can_use_manual_tracking_code:

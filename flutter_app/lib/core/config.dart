@@ -3,6 +3,8 @@ library;
 
 /// The API address compiled into the app: `--dart-define=API_BASE_URL=https://example.com/api/v1`.
 /// When it is empty the user is asked for the address on first start and can change it later.
+const String defaultApiBaseUrl = 'http://back.reservira.ir/api/v1';
+
 const String compiledApiBaseUrl = String.fromEnvironment('API_BASE_URL');
 
 /// `--dart-define=REQUIRE_HTTPS=true` refuses every plain-HTTP address, local networks included.
@@ -36,7 +38,7 @@ class ServerAddress {
   /// Accepts `example.com`, `https://example.com`, `https://example.com/api/v1`, `http://192.168.1.10:5000` …
   ///
   /// An address without a scheme is taken as HTTPS, and `/api/v1` is added unless the address already names the API.
-  /// Plain HTTP is accepted only for hosts of the local network, and not at all with [httpsOnly].
+  /// Both HTTP and HTTPS are accepted for any host; httpsOnly is retained for source compatibility.
   static ServerAddress parse(String input, {bool httpsOnly = requireHttps}) {
     var text = input.trim();
     if (text.isEmpty) return const ServerAddress._(problem: 'نشانی سرور را وارد کنید.');
@@ -50,17 +52,18 @@ class ServerAddress {
     if (uri.userInfo.isNotEmpty || uri.hasQuery || uri.hasFragment) {
       return const ServerAddress._(problem: 'نشانی سرور نباید نام کاربری، رمز یا پارامتر داشته باشد.');
     }
-    if (uri.scheme == 'http') {
-      if (httpsOnly) {
-        return const ServerAddress._(problem: 'این نسخه فقط به نشانی‌های امن (https) وصل می‌شود.');
-      }
-      if (!isLocalNetworkHost(uri.host)) {
-        return const ServerAddress._(
-          problem: 'برای سرورهای اینترنتی فقط نشانی امن (https) پذیرفته می‌شود. اتصال http تنها در شبکهٔ داخلی مجاز است.',
-        );
-      }
-    }
-
+    // Previous HTTPS-only enforcement retained as comments.
+//     if (uri.scheme == 'http') {
+//       if (httpsOnly) {
+//         return const ServerAddress._(problem: 'این نسخه فقط به نشانی‌های امن (https) وصل می‌شود.');
+//       }
+//       if (!isLocalNetworkHost(uri.host)) {
+//         return const ServerAddress._(
+//           problem: 'برای سرورهای اینترنتی فقط نشانی امن (https) پذیرفته می‌شود. اتصال http تنها در شبکهٔ داخلی مجاز است.',
+//         );
+//       }
+//     }
+// 
     // The address of the site is enough: the API lives under it.
     var path = uri.path.replaceAll(RegExp(r'/+$'), '');
     if (!RegExp(r'/api/v\d+$').hasMatch(path)) path = '$path$_apiPath';

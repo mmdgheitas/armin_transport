@@ -182,7 +182,7 @@ class _Builder:
 
     @staticmethod
     def _error_statuses(spec: EndpointSpec, method: str, *, has_path_parameters: bool) -> list[int]:
-        statuses: set[int] = {401, 403} if spec.auth == "bearer" else {429}
+        statuses: set[int] = {401, 403} if spec.auth in {"bearer", "customer_token"} else {429}
         if spec.auth == "customer_token":
             statuses.add(401)
         statuses.update(spec.errors)
@@ -236,7 +236,7 @@ class _Builder:
         request_body = self._request_body(spec)
         if request_body is not None:
             operation["requestBody"] = request_body
-        operation["security"] = [{_BEARER_SCHEME: []}] if spec.auth == "bearer" else []
+        operation["security"] = [{_BEARER_SCHEME: []}] if spec.auth in {"bearer", "customer_token"} else []
         return operation
 
     def build(self) -> dict[str, Any]:

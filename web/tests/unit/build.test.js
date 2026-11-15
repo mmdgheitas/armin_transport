@@ -59,7 +59,7 @@ test('the client builds: every page asset and module import carries the build st
   const outDir = freshDir('out');
   const result = await build({ sourceDir: REAL_SOURCES, outDir });
   assert.match(result.buildId, /^[0-9a-f]{12}$/);
-  assert.equal(result.apiBaseUrl, '/api/v1');
+  assert.equal(result.apiBaseUrl, 'http://back.reservira.ir/api/v1');
 
   const sourceFiles = await listFiles(REAL_SOURCES);
   const outputFiles = await listFiles(outDir);
@@ -87,7 +87,7 @@ test('the client builds: every page asset and module import carries the build st
   assert.ok(imports > 50, `expected the modules to import each other, found ${imports} imports`);
 
   const manifest = JSON.parse(await readFile(path.join(outDir, 'build.json'), 'utf8'));
-  assert.deepEqual(manifest, { build_id: result.buildId, api_base_url: '/api/v1', files: sourceFiles.length, bytes: result.bytes });
+  assert.deepEqual(manifest, { build_id: result.buildId, api_base_url: 'http://back.reservira.ir/api/v1', files: sourceFiles.length, bytes: result.bytes });
 
   // The sources themselves are never modified.
   assert.ok((await readFile(path.join(REAL_SOURCES, 'index.html'), 'utf8')).includes('__BUILD_ID__'));

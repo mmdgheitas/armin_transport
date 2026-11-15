@@ -7,27 +7,27 @@ const String appFontFamily = 'Vazirmatn';
 
 /// The colours of the web client (`web/src/assets/css/app.css`), so that both look like one product.
 abstract final class AppColors {
-  static const Color background = Color(0xFFF3F5F9);
+  static const Color background = Color(0xFFFFFFFF);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceAlt = Color(0xFFF8FAFC);
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color borderStrong = Color(0xFFCBD5E1);
-  static const Color text = Color(0xFF0F172A);
-  static const Color muted = Color(0xFF5B6B82);
-  static const Color primary = Color(0xFF1D4ED8);
-  static const Color primaryDark = Color(0xFF1E40AF);
-  static const Color primarySoft = Color(0xFFEEF4FF);
-  static const Color accent = Color(0xFFF59E0B);
-  static const Color success = Color(0xFF15803D);
-  static const Color successSoft = Color(0xFFECFDF3);
-  static const Color danger = Color(0xFFB91C1C);
-  static const Color dangerSoft = Color(0xFFFEF2F2);
-  static const Color warning = Color(0xFFA16207);
-  static const Color warningSoft = Color(0xFFFEFCE8);
-  static const Color infoSoft = Color(0xFFEFF6FF);
-  static const Color sidebar = Color(0xFF0F1B33);
-  static const Color sidebarHover = Color(0xFF1B2A4A);
-  static const Color sidebarText = Color(0xFFC7D2E5);
+  static const Color surfaceAlt = Color(0xFFFFFFFF);
+  static const Color border = Color(0xFF4169E1);
+  static const Color borderStrong = Color(0xFF4169E1);
+  static const Color text = Color(0xFF4169E1);
+  static const Color muted = Color(0xFF4169E1);
+  static const Color primary = Color(0xFF4169E1);
+  static const Color primaryDark = Color(0xFF4169E1);
+  static const Color primarySoft = Color(0xFFFFFFFF);
+  static const Color accent = Color(0xFF4169E1);
+  static const Color success = Color(0xFF4169E1);
+  static const Color successSoft = Color(0xFFFFFFFF);
+  static const Color danger = Color(0xFF4169E1);
+  static const Color dangerSoft = Color(0xFFFFFFFF);
+  static const Color warning = Color(0xFF4169E1);
+  static const Color warningSoft = Color(0xFFFFFFFF);
+  static const Color infoSoft = Color(0xFFFFFFFF);
+  static const Color sidebar = Color(0xFF4169E1);
+  static const Color sidebarHover = Color(0xFF4169E1);
+  static const Color sidebarText = Color(0xFFFFFFFF);
 }
 
 const double radiusLarge = 12;

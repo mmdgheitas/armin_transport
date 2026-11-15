@@ -252,7 +252,7 @@ export function shipmentDetailPage(ctx) {
   // ------------------------------------------------------------------ documents
   function uploadPanel(onUploaded) {
     const settings = session.appSettings.upload ?? {};
-    const maxFiles = settings.max_files_per_upload ?? 10;
+    const maxFiles = settings.max_files_per_upload ?? 12;
     const maxSize = settings.max_file_size_bytes ?? 10 * 1024 * 1024;
     const allowed = settings.allowed_extensions ?? [];
     let selected = []; // [{ file, error }]
@@ -270,14 +270,14 @@ export function shipmentDetailPage(ctx) {
       { type: 'button', class: 'dropzone', onClick: () => input.click() },
       icon('upload', { size: 26 }),
       h('strong', {}, 'فایل‌ها را اینجا رها کنید یا برای انتخاب کلیک کنید'),
-      h('span', { class: 'small' }, `حداکثر ${formatNumber(maxFiles)} فایل، هر فایل تا ${formatFileSize(maxSize)}`, allowed.length > 0 ? ` · قالب‌های مجاز: ${allowed.join('، ')}` : ''),
+      h('span', { class: 'small' }, `حداکثر ${formatNumber(maxFiles)} فایل، بدون محدودیت نوع و حجم`, allowed.length > 0 ? ` · قالب‌های مجاز: ${allowed.join('، ')}` : ''),
     );
 
     const localProblem = (file) => {
       const extension = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : '';
       if (allowed.length > 0 && !allowed.includes(extension)) return 'قالب این فایل مجاز نیست.';
       if (file.size === 0) return 'فایل خالی است.';
-      if (file.size > maxSize) return `حجم فایل بیشتر از ${formatFileSize(maxSize)} است.`;
+      if (maxSize && file.size > maxSize) return `حجم فایل بیشتر از ${formatFileSize(maxSize)} است.`;
       return null;
     };
 
@@ -365,7 +365,7 @@ export function shipmentDetailPage(ctx) {
       }),
     );
 
-    return h('div', { class: 'card-body stack' }, input, dropzone, list, summary, h('div', { class: 'row-between' }, visible.element, submit));
+    return h('div', { class: 'card-body stack' }, input, dropzone, list, summary, h('div', { class: 'row-between' }, submit));
   }
 
   function documentsTab(shipment, reloadShipment) {
@@ -405,27 +405,6 @@ export function shipmentDetailPage(ctx) {
               },
               { header: 'بارگذاری‌کننده', className: 'hide-mobile', cell: (item) => item.uploaded_by?.full_name ?? '—' },
               { header: 'تاریخ', className: 'nowrap hide-mobile', cell: (item) => formatDateTime(item.created_at) },
-              {
-                header: 'نمایش به مشتری',
-                cell(item) {
-                  if (archived || !can('document:set_visibility')) return item.is_customer_visible ? badge('قابل مشاهده', 'success') : badge('پنهان');
-                  const toggle = h('input', { type: 'checkbox', checked: item.is_customer_visible, 'aria-label': `نمایش ${item.original_name} به مشتری` });
-                  toggle.addEventListener('change', async () => {
-                    toggle.disabled = true;
-                    try {
-                      const { message } = await api.patch(`/documents/${item.id}`, { json: { is_customer_visible: toggle.checked } });
-                      item.is_customer_visible = toggle.checked;
-                      toast.success(message);
-                    } catch (error) {
-                      toggle.checked = !toggle.checked;
-                      toast.error(errorMessage(error));
-                    } finally {
-                      toggle.disabled = false;
-                    }
-                  });
-                  return h('label', { class: 'check' }, toggle, h('span', { class: 'small' }, 'قابل مشاهده'));
-                },
-              },
               {
                 header: h('span', { class: 'sr-only' }, 'عملیات'),
                 cell(item) {
