@@ -36,7 +36,7 @@ const CONTENT_TYPES = {
 /** Sent with every page and file. The policy mirrors the one of the backend (tests/e2e/hosting.test.js compares them). */
 export const SECURITY_HEADERS = Object.freeze({
   'Content-Security-Policy':
-    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; " +
+    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' http://back.reservira.ir; " +
     "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',

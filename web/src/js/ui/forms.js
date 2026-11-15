@@ -84,7 +84,7 @@ export function textField({
   };
 }
 
-export function passwordField({ label, autocomplete = 'current-password', required = true, hint = null }) {
+export function passwordField({ label, autocomplete = 'current-password', required = true, hint = '۱ تا ۱۲۸ نویسه؛ فاصله‌ها بخشی از رمز هستند.' }) {
   const field = textField({ label, type: 'password', autocomplete, required, hint, dir: 'ltr', maxlength: 128 });
   const toggle = h(
     'button',

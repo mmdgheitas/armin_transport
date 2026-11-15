@@ -254,7 +254,7 @@ class _UploadPanelState extends ConsumerState<_UploadPanel> {
     if (_allowed.isNotEmpty && !_allowed.contains(extension)) return 'قالب این فایل مجاز نیست.';
     if (size == null) return null;
     if (size == 0) return 'فایل خالی است.';
-    if (size > _maxSize) return 'حجم فایل بیشتر از ${formatFileSize(_maxSize)} است.';
+    if (_maxSize > 0 && size > _maxSize) return 'حجم فایل بیشتر از ${formatFileSize(_maxSize)} است.';
     return null;
   }
 
@@ -376,7 +376,7 @@ class _UploadPanelState extends ConsumerState<_UploadPanel> {
         _message ?? (tooMany ? 'در هر بار حداکثر ${formatNumber(_maxFiles)} فایل قابل بارگذاری است.' : null);
     final ready = _selected.isNotEmpty && !tooMany && !_selected.any((entry) => entry.error != null);
     final limits = [
-      'حداکثر ${formatNumber(_maxFiles)} فایل، هر فایل تا ${formatFileSize(_maxSize)}',
+      'حداکثر ${formatNumber(_maxFiles)} فایل، بدون محدودیت نوع و حجم',
       if (_allowed.isNotEmpty) 'قالب‌های مجاز: ${_allowed.join('، ')}',
     ].join(' · ');
     return Padding(

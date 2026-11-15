@@ -10,5 +10,5 @@
  * origin of this site must be listed in the backend's CORS_ALLOWED_ORIGINS.
  */
 export const config = Object.freeze({
-  apiBaseUrl: '/api/v1',
+  apiBaseUrl: 'http://back.reservira.ir/api/v1',
 });

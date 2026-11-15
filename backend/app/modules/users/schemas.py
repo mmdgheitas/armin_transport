@@ -13,10 +13,17 @@ _PASSWORD_LENGTH = fields.length(min=1, max=128)
 
 
 class UserCreateSchema(InputSchema):
+    country = fields.String(allow_none=True, validate=fields.one_of(["CI", "KZ", "UZ"]))
+    role = fields.Enum(
+        UserRole,
+        by_value=True,
+        load_default=UserRole.EMPLOYEE,
+        validate=fields.one_of([UserRole.EMPLOYEE, UserRole.CUSTOMER]),
+    )
     username = fields.String(required=True, validate=fields.regexp(USERNAME_PATTERN, _USERNAME_MESSAGE))
     full_name = fields.String(required=True, validate=fields.length(min=2, max=200))
     password = fields.String(required=True, strip=False, validate=_PASSWORD_LENGTH)
-    company_id = fields.UUID(required=True)
+    company_id = fields.UUID(allow_none=True, load_default=None)
     is_active = fields.Boolean(load_default=True)
 
 
@@ -39,11 +46,13 @@ class UserQuerySchema(PaginationQuerySchema):
 
 
 class UserSchema(OutputSchema):
+    deleted_at = fields.DateTime(allow_none=True)
     """Public representation of a user. The password hash is never serialized."""
 
     id = fields.UUID()
     username = fields.String()
     full_name = fields.String()
+    country = fields.String(allow_none=True, validate=fields.one_of(["CI", "KZ", "UZ"]))
     role = fields.Enum(UserRole, by_value=True)
     is_active = fields.Boolean()
     company_id = fields.UUID(allow_none=True)

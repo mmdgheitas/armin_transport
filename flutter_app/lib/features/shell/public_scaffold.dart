@@ -27,7 +27,7 @@ class Brand extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.primary, Color(0xFF2563EB), Color(0xFF0EA5E9)],
+              colors: [AppColors.primary, Color(0xFF4169E1), Color(0xFF4169E1)],
               stops: [0, 0.55, 1],
             ),
           ),

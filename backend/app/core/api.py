@@ -22,6 +22,7 @@ from app.core.errors import AuthenticationError, BadRequestError, UnsupportedMed
 from app.core.pagination import Page
 from app.core.permissions import Permission
 from app.core.responses import DEFAULT_SUCCESS_MESSAGE, success_response
+from app.core.sqlite_retry import retry_sqlite_request
 
 if TYPE_CHECKING:
     from app.container import Services
@@ -152,14 +153,16 @@ def endpoint(
     )
 
     def decorator(view: Callable[..., Any]) -> Callable[..., Any]:
+        @retry_sqlite_request
         @wraps(view)
         def wrapper(**url_params: Any) -> Any:
             kwargs: dict[str, Any] = dict(url_params)
-            if spec.auth == "bearer":
+            if spec.auth in {"bearer", "customer_token"}:
                 actor = get_services().auth.authenticate(_bearer_token())
                 g.actor = actor
                 actor.require(*spec.permissions)
-                kwargs["actor"] = actor
+                if spec.auth == "bearer":
+                    kwargs["actor"] = actor
             if spec.query is not None:
                 kwargs["query"] = spec.query().load(request.args.to_dict(flat=True))
             if spec.body is not None:

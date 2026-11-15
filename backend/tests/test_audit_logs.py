@@ -39,9 +39,10 @@ def _all_rows(app: Flask) -> list[AuditLog]:
 def test_business_scenario_leaves_a_complete_trail(factory: Factory, app: Flask) -> None:
     admin = factory.admin()
     admin_api = factory.login(admin)
-    company_id = admin_api.post("/companies", json={"name": "شرکت ممیزی", "company_code": "AUD"}).get_json()["data"][
-        "id"
-    ]
+    company_id = admin_api.post(
+        "/companies",
+        json={"name": "شرکت ممیزی", "company_code": "AUD", "username": "audit-company", "password": DEFAULT_PASSWORD},
+    ).get_json()["data"]["id"]
     employee_id = admin_api.post(
         "/users",
         json={"username": "audited", "full_name": "کارمند", "password": DEFAULT_PASSWORD, "company_id": company_id},
@@ -55,7 +56,9 @@ def test_business_scenario_leaves_a_complete_trail(factory: Factory, app: Flask)
     login = employee_api.login("audited")
     employee_api.token = login.get_json()["data"]["access_token"]
 
-    shipment = employee_api.post("/shipments", json={"description": "محموله"}).get_json()["data"]
+    shipment = employee_api.post("/shipments", json={"description": "محموله", "company_id": company_id}).get_json()[
+        "data"
+    ]
     shipment_id, first_code = shipment["id"], shipment["tracking_code"]
     employee_api.patch(f"/shipments/{shipment_id}", json={"description": "ویرایش‌شده"})
     employee_api.put(f"/shipments/{shipment_id}/product-values", json={"values": {"note": "متن"}})
@@ -64,7 +67,7 @@ def test_business_scenario_leaves_a_complete_trail(factory: Factory, app: Flask)
     employee_api.patch(f"/documents/{document_id}", json={"is_customer_visible": False})
     employee_api.post(f"/shipments/{shipment_id}/tracking-code", json={"generate": True})
     employee_api.post(f"/shipments/{shipment_id}/archive")
-    assert employee_api.get("/companies").status_code == 403
+    assert employee_api.get("/users").status_code == 403
     admin_api.post(f"/shipments/{shipment_id}/unarchive")
     admin_api.delete(f"/documents/{document_id}")
     admin_api.patch(f"/product-fields/{field_id}", json={"label": "توضیح"})
@@ -87,7 +90,6 @@ def test_business_scenario_leaves_a_complete_trail(factory: Factory, app: Flask)
         ("PRODUCT_VALUES_UPDATED", "shipment", shipment_id),
         ("DOCUMENT_UPLOADED", "document", document_id),
         ("DOCUMENT_DOWNLOADED", "document", document_id),
-        ("DOCUMENT_VISIBILITY_CHANGED", "document", document_id),
         ("TRACKING_CODE_CHANGED", "shipment", shipment_id),
         ("SHIPMENT_ARCHIVED", "shipment", shipment_id),
         ("ACCESS_DENIED", "http_request", None),
@@ -129,11 +131,12 @@ def test_trail_never_contains_credentials(factory: Factory, app: Flask) -> None:
     client.post(
         "/auth/change-password", json={"current_password": DEFAULT_PASSWORD, "new_password": "Brand-New-Passw0rd!"}
     )
-    customer = anonymous.post("/customer/lookup", json={"tracking_code": shipment.tracking_code}).get_json()["data"]
-    anonymous.get(f"/customer/access/{customer['access_token']}/shipment")
-    documents = anonymous.get(f"/customer/access/{customer['access_token']}/documents").get_json()["data"]["items"]
-    anonymous.get(f"/customer/access/{customer['access_token']}/documents/{documents[0]['id']}/download")
-    anonymous.post("/customer/lookup", json={"tracking_code": "GUESSED-CODE-123"})
+    portal = factory.login(factory.admin())
+    customer = portal.post("/customer/lookup", json={"tracking_code": shipment.tracking_code}).get_json()["data"]
+    portal.get(f"/customer/access/{customer['access_token']}/shipment")
+    documents = portal.get(f"/customer/access/{customer['access_token']}/documents").get_json()["data"]["items"]
+    portal.get(f"/customer/access/{customer['access_token']}/documents/{documents[0]['id']}/download")
+    portal.post("/customer/lookup", json={"tracking_code": "GUESSED-CODE-123"})
 
     rows = _all_rows(app)
     assert {"LOGIN_FAILED", "REFRESH_TOKEN_REUSE_DETECTED", "PASSWORD_CHANGE_FAILED", "PASSWORD_CHANGED"} <= {
@@ -188,11 +191,13 @@ def test_metadata_sanitizer_drops_credential_like_keys_and_bounds_strings() -> N
 
 def test_entry_shape(admin_api: Api, factory: Factory) -> None:
     admin_api.post(
-        "/companies", json={"name": "شرکت", "company_code": "SHAPE"}, headers={"X-Request-ID": "trace-12345678"}
+        "/companies",
+        json={"name": "شرکت", "company_code": "SHAPE", "username": "shape-company", "password": DEFAULT_PASSWORD},
+        headers={"X-Request-ID": "trace-12345678"},
     )
     entry = _items(admin_api, "?action=COMPANY_CREATED")[0]
     assert set(entry) == {
-        "id", "action", "entity_type", "entity_id", "metadata", "ip_address", "request_id", "user", "created_at",
+        "id", "company_id", "action", "entity_type", "entity_id", "metadata", "ip_address", "request_id", "user", "created_at",
     }  # fmt: skip
     assert entry["entity_type"] == "company"
     assert entry["request_id"] == "trace-12345678"
@@ -216,8 +221,8 @@ def test_filters_and_ordering(factory: Factory, app: Flask) -> None:
     company = factory.company()
     employee = factory.employee(company)
     employee_api = factory.login(employee)
-    first = employee_api.post("/shipments", json={}).get_json()["data"]["id"]
-    second = employee_api.post("/shipments", json={}).get_json()["data"]["id"]
+    first = employee_api.post("/shipments", json={"company_id": str(company.id)}).get_json()["data"]["id"]
+    second = employee_api.post("/shipments", json={"company_id": str(company.id)}).get_json()["data"]["id"]
     employee_api.post(f"/shipments/{first}/archive")
 
     everything = _items(admin_api, "?per_page=100")
@@ -294,7 +299,18 @@ def test_failed_operations_do_not_leave_success_entries(factory: Factory) -> Non
     """The entry is written in the same transaction as the change it describes."""
     admin_api = factory.login(factory.admin())
     factory.company(company_code="TAKEN")
-    assert admin_api.post("/companies", json={"name": "تکراری", "company_code": "TAKEN"}).status_code == 409
+    assert (
+        admin_api.post(
+            "/companies",
+            json={
+                "name": "تکراری",
+                "company_code": "TAKEN",
+                "username": "duplicate-company",
+                "password": DEFAULT_PASSWORD,
+            },
+        ).status_code
+        == 409
+    )
     assert admin_api.post("/companies", json={"name": "", "company_code": "NEW"}).status_code == 422
     assert "COMPANY_CREATED" not in factory.audit_actions()
 

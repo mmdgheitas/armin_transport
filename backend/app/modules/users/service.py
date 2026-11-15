@@ -65,7 +65,7 @@ class UserService:
 
     def _get_employee(self, user_id: uuid.UUID) -> User:
         user = self.get(user_id)
-        if user.role is not UserRole.EMPLOYEE:
+        if user.role is UserRole.SUPER_ADMIN:
             raise PermissionDeniedError(
                 "حساب مدیر مرکزی از طریق این سرویس قابل تغییر نیست.", code="admin_account_protected"
             )
@@ -76,22 +76,28 @@ class UserService:
 
     def get(self, user_id: uuid.UUID) -> User:
         user = self._users.get(user_id)
-        if user is None:
+        if user is None or user.deleted_at is not None:
             raise NotFoundError("کاربر موردنظر یافت نشد.")
         return user
 
     def create_employee(self, actor: Actor, data: dict[str, Any]) -> User:
         username = normalize_username(data["username"])
         validate_password(data["password"], username, self._settings)
-        company = self._require_company(data["company_id"])
+        role = data.get("role", UserRole.EMPLOYEE)
+        company = None
+        if role is UserRole.CUSTOMER:
+            if not data.get("company_id"):
+                raise ValidationFailedError.single("company_id", "انتخاب شرکت برای حساب مشتری الزامی است.")
+            company = self._require_company(data["company_id"])
         if self._users.username_exists(username):
             raise self._username_conflict()
         user = User(
             username=username,
             full_name=data["full_name"],
+            country=data.get("country"),
             password_hash=self._passwords.hash(data["password"]),
-            role=UserRole.EMPLOYEE,
-            company_id=company.id,
+            role=data.get("role", UserRole.EMPLOYEE),
+            company_id=company.id if company else None,
             is_active=data.get("is_active", True),
         )
         try:
@@ -103,7 +109,11 @@ class UserService:
                     "user",
                     user.id,
                     actor_id=actor.user_id,
-                    metadata={"username": user.username, "company_id": str(company.id), "role": user.role.value},
+                    metadata={
+                        "username": user.username,
+                        "company_id": str(company.id) if company else None,
+                        "role": user.role.value,
+                    },
                 )
         except IntegrityError as exc:
             raise self._username_conflict() from exc
@@ -141,7 +151,7 @@ class UserService:
             raise self._username_conflict() from exc
         return user
 
-    def update_employee(self, actor: Actor, user_id: uuid.UUID, data: dict[str, Any]) -> User:
+    def update_employee(self, actor: Actor, user_id: uuid.UUID, data: dict[str, Any]) -> User:  # noqa: PLR0912 - audit each independent account change
         user = self._get_employee(user_id)
         changes: dict[str, Any] = {}
         must_invalidate_tokens = False
@@ -157,8 +167,19 @@ class UserService:
         if "is_active" in data and data["is_active"] != user.is_active:
             actor.require(Permission.USER_SET_ACTIVE)
 
+        if "password" in data:
+            validate_password(data["password"], data.get("username", user.username), self._settings)
+
         try:
             with unit_of_work(self._session):
+                if "country" in data and data["country"] != user.country:
+                    changes["country"] = {"from": user.country, "to": data["country"]}
+                    user.country = data["country"]
+                    must_invalidate_tokens = True
+                if "password" in data:
+                    user.password_hash = self._passwords.hash(data["password"])
+                    must_invalidate_tokens = True
+                    self._audit.record("USER_PASSWORD_RESET", "user", user.id, actor_id=actor.user_id)
                 if "username" in changes:
                     user.username = changes["username"]["to"]
                 if "full_name" in data and data["full_name"] != user.full_name:

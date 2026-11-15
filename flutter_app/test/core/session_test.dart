@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:armin_transport/core/api/api_error.dart';
 import 'package:armin_transport/core/api/models.dart';
 import 'package:armin_transport/core/session.dart';
+import 'package:armin_transport/core/config.dart';
 import 'package:armin_transport/core/storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -48,9 +49,9 @@ void main() {
   Future<AppSession> load({String compiledUrl = ''}) =>
       AppSession.load(storage, compiledUrl: compiledUrl, now: clock.call);
 
-  test('starts empty on a new device', () async {
+  test('starts with editable default server on a new device', () async {
     final app = await load();
-    expect(app.serverUrl, isNull);
+    expect(app.serverUrl, defaultApiBaseUrl);
     expect(app.auth, isNull);
     expect(app.isSignedIn, isFalse);
     expect(app.serverIsFixed, isFalse);
@@ -149,18 +150,27 @@ void main() {
     expect(storage.values[serverStorageKey], 'https://stored.test/api/v1');
   });
 
+  test('public HTTP override persists across restarts', () async {
+    final app = await load();
+    app.setServer('http://another.example/api/v1');
+    await app.settled;
+    final restored = await load();
+    expect(restored.serverUrl, 'http://another.example/api/v1');
+    expect(restored.serverIsFixed, isFalse);
+  });
+
   test('an unusable built-in address falls back to the stored one', () async {
     storage.values[serverStorageKey] = 'https://stored.test/api/v1';
-    final app = await load(compiledUrl: 'http://public.example.com');
+    final app = await load(compiledUrl: 'ftp://public.example.com');
     expect(app.serverUrl, 'https://stored.test/api/v1');
     expect(app.serverIsFixed, isFalse);
   });
 
   test('ignores stored values it cannot use', () async {
-    storage.values[serverStorageKey] = 'http://public.example.com/api/v1'; // plain HTTP outside a local network
+    storage.values[serverStorageKey] = 'ftp://public.example.com/api/v1'; // unsupported URL scheme
     storage.values[sessionStorageKey] = '{broken';
     final app = await load();
-    expect(app.serverUrl, isNull);
+    expect(app.serverUrl, defaultApiBaseUrl);
     expect(app.auth, isNull);
 
     storage.values[serverStorageKey] = server;
@@ -269,7 +279,7 @@ void main() {
         compiledUrl: '',
         now: clock.call,
       );
-      expect(app.serverUrl, isNull);
+      expect(app.serverUrl, defaultApiBaseUrl);
       app.setServer(server);
       app.write(newSession());
       app.end();

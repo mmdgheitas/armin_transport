@@ -81,7 +81,7 @@ test('the page is served from the sources under the policy the backend uses for 
     assert.ok(!html.includes('__BUILD_ID__'));
 
     const policy = response.headers.get('content-security-policy');
-    for (const directive of ["default-src 'self'", "script-src 'self'", "style-src 'self'", "connect-src 'self'", "object-src 'none'", "base-uri 'self'"]) {
+    for (const directive of ["default-src 'self'", "script-src 'self'", "style-src 'self'", "connect-src 'self' http://back.reservira.ir", "object-src 'none'", "base-uri 'self'"]) {
       assert.ok(policy.split('; ').includes(directive), `the policy has ${directive}`);
     }
     assert.ok(!policy.includes('unsafe'));

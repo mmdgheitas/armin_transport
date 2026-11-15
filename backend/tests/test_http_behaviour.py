@@ -299,7 +299,7 @@ def test_web_client_is_served_with_a_strict_content_security_policy(
     policy = dict(part.strip().split(" ", 1) for part in index.headers["Content-Security-Policy"].split(";"))
     assert policy["default-src"] == "'self'"
     assert policy["script-src"] == "'self'" and policy["style-src"] == "'self'"  # no inline code, no eval
-    assert policy["connect-src"] == "'self'"
+    assert policy["connect-src"] == "'self' http://back.reservira.ir"
     assert policy["object-src"] == "'none'" and policy["base-uri"] == "'self'"
     assert policy["frame-ancestors"] == "'none'"
     assert "unsafe" not in index.headers["Content-Security-Policy"]
@@ -369,7 +369,7 @@ def test_cors_origins_do_not_widen_the_policy_of_the_served_web_client(
     """CORS lets pages of other origins call this API; it must not let the page served here call other origins."""
     client = make_app(serve_web_app=True, web_app_dir=web_root, cors_allowed_origins=origins).test_client()
     policy = client.get("/").headers["Content-Security-Policy"]
-    assert "connect-src 'self';" in policy
+    assert "connect-src 'self' http://back.reservira.ir;" in policy
     assert "example.com" not in policy
     assert "*" not in policy
 

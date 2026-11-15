@@ -47,7 +47,7 @@ class UserRepository:
         is_active: bool | None = None,
         q: str | None = None,
     ) -> Page[User]:
-        statement = select(User)
+        statement = select(User).where(User.deleted_at.is_(None))
         if company_id is not None:
             statement = statement.where(User.company_id == company_id)
         if role is not None:

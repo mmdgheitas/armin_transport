@@ -5,274 +5,300 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../core/api/models.dart';
+// import '../../core/api/models.dart'; // legacy sidebar
 import '../../core/providers.dart';
 import '../../routing.dart';
 import '../../theme.dart';
-import '../../widgets/feedback.dart';
-import 'public_scaffold.dart';
+// import '../../widgets/feedback.dart'; // legacy sidebar
+// import 'public_scaffold.dart'; // legacy sidebar
 
-/// From this width on the navigation stays on screen; below it is a drawer.
-const double _wideLayout = 960;
-
-const Map<String, IconData> _navIcons = {
-  AppPaths.dashboard: Icons.dashboard_outlined,
-  AppPaths.shipments: Icons.inventory_2_outlined,
-  AppPaths.companies: Icons.business_outlined,
-  AppPaths.users: Icons.people_outline,
-  AppPaths.productFields: Icons.tune,
-  AppPaths.auditLogs: Icons.history,
-};
-
-class AppShell extends ConsumerStatefulWidget {
+// Legacy sidebar, drawer and navigation intentionally retained as comments.
+// /// From this width on the navigation stays on screen; below it is a drawer.
+// const double _wideLayout = 960;
+// 
+// const Map<String, IconData> _navIcons = {
+//   AppPaths.dashboard: Icons.dashboard_outlined,
+//   AppPaths.shipments: Icons.inventory_2_outlined,
+//   AppPaths.companies: Icons.business_outlined,
+//   AppPaths.users: Icons.people_outline,
+//   AppPaths.productFields: Icons.tune,
+//   AppPaths.auditLogs: Icons.history,
+//   AppPaths.companyActivity: Icons.history,
+// };
+// 
+// class AppShell extends ConsumerStatefulWidget {
+//   const AppShell({super.key, required this.location, required this.child});
+// 
+//   /// The path of the page that [child] shows.
+//   final String location;
+//   final Widget child;
+// 
+//   @override
+//   ConsumerState<AppShell> createState() => _AppShellState();
+// }
+// 
+// class _AppShellState extends ConsumerState<AppShell> {
+//   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+//   bool _leaving = false;
+// 
+//   void _go(String path) {
+//     _scaffoldKey.currentState?.closeDrawer();
+//     context.go(path);
+//   }
+// 
+//   Future<void> _logout() async {
+//     if (_leaving) return;
+//     setState(() => _leaving = true);
+//     // Taken before the session ends: afterwards this screen is gone.
+//     final router = GoRouter.of(context);
+//     final messenger = ScaffoldMessenger.of(context);
+//     await ref.read(apiClientProvider).logout();
+//     router.go(AppPaths.login);
+//     messenger
+//       ..hideCurrentSnackBar()
+//       ..showSnackBar(const SnackBar(content: Text('از حساب کاربری خود خارج شدید.')));
+//   }
+// 
+//   @override
+//   Widget build(BuildContext context) {
+//     final auth = ref.watch(authProvider);
+//     // The session has just ended; the router is about to show the login screen.
+//     if (auth == null) return const Scaffold(body: LoadingBlock(text: 'در حال خروج…'));
+// 
+//     final wide = MediaQuery.sizeOf(context).width >= _wideLayout;
+//     final sidebar = _Sidebar(auth: auth, activePath: navPathOf(widget.location), onGo: _go);
+//     return Scaffold(
+//       key: _scaffoldKey,
+//       drawer: wide ? null : Drawer(width: 272, backgroundColor: AppColors.sidebar, child: sidebar),
+//       body: SafeArea(
+//         child: Row(
+//           crossAxisAlignment: CrossAxisAlignment.stretch,
+//           children: [
+//             if (wide) SizedBox(width: 256, child: sidebar),
+//             // The key keeps the page (and what was typed into it) when the window is resized across the breakpoint.
+//             Expanded(
+//               key: const ValueKey<String>('page'),
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.stretch,
+//                 children: [
+//                   _TopBar(
+//                     title: titleOf(widget.location),
+//                     compact: !wide,
+//                     onMenu: () => _scaffoldKey.currentState?.openDrawer(),
+//                     onProfile: () => _go(AppPaths.profile),
+//                     onLogout: _leaving ? null : _logout,
+//                   ),
+//                   Expanded(child: widget.child),
+//                 ],
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
+// 
+// /// The bar above the page: its title, and the way to the own account and out of the app.
+// class _TopBar extends StatelessWidget {
+//   const _TopBar({
+//     required this.title,
+//     required this.compact,
+//     required this.onMenu,
+//     required this.onProfile,
+//     required this.onLogout,
+//   });
+// 
+//   final String title;
+// 
+//   /// On a narrow screen: a button for the navigation drawer, and icons instead of labelled buttons.
+//   final bool compact;
+//   final VoidCallback onMenu;
+//   final VoidCallback onProfile;
+//   final VoidCallback? onLogout;
+// 
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       height: 56,
+//       padding: EdgeInsetsDirectional.only(start: compact ? 4 : 24, end: compact ? 4 : 16),
+//       decoration: const BoxDecoration(
+//         color: AppColors.surface,
+//         border: Border(bottom: BorderSide(color: AppColors.border)),
+//       ),
+//       child: Row(
+//         children: [
+//           if (compact) ...[
+//             IconButton(tooltip: 'فهرست اصلی', onPressed: onMenu, icon: const Icon(Icons.menu)),
+//             const SizedBox(width: 4),
+//           ],
+//           Expanded(
+//             child: Semantics(
+//               header: true,
+//               child: Text(
+//                 title,
+//                 maxLines: 1,
+//                 overflow: TextOverflow.ellipsis,
+//                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+//               ),
+//             ),
+//           ),
+//           if (compact) ...[
+//             IconButton(tooltip: 'حساب کاربری', onPressed: onProfile, icon: const Icon(Icons.person_outline)),
+//             IconButton(tooltip: 'خروج', onPressed: onLogout, icon: const Icon(Icons.logout)),
+//           ] else ...[
+//             TextButton.icon(
+//               onPressed: onProfile,
+//               icon: const Icon(Icons.person_outline, size: 18),
+//               label: const Text('حساب کاربری'),
+//             ),
+//             const SizedBox(width: 4),
+//             TextButton.icon(onPressed: onLogout, icon: const Icon(Icons.logout, size: 18), label: const Text('خروج')),
+//           ],
+//         ],
+//       ),
+//     );
+//   }
+// }
+// 
+// class _Sidebar extends StatelessWidget {
+//   const _Sidebar({required this.auth, required this.activePath, required this.onGo});
+// 
+//   final AuthSession auth;
+//   final String? activePath;
+//   final void Function(String path) onGo;
+// 
+//   @override
+//   Widget build(BuildContext context) {
+//     final user = auth.user;
+//     final company = user.company?.name;
+//     return Material(
+//       color: AppColors.sidebar,
+//       child: SafeArea(
+//         child: Padding(
+//           padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.stretch,
+//             children: [
+//               const Padding(
+//                 padding: EdgeInsets.fromLTRB(8, 6, 8, 18),
+//                 child: Align(alignment: AlignmentDirectional.centerStart, child: Brand(color: Colors.white)),
+//               ),
+//               Expanded(
+//                 child: Semantics(
+//                   label: 'فهرست اصلی',
+//                   container: true,
+//                   child: ListView(
+//                     padding: EdgeInsets.zero,
+//                     children: [
+//                       for (final entry in navEntries)
+//                         if (auth.can(entry.permission))
+//                           _NavItem(
+//                             label: entry.label,
+//                             icon: _navIcons[entry.path] ?? Icons.circle_outlined,
+//                             active: entry.path == activePath,
+//                             onTap: () => onGo(entry.path),
+//                           ),
+//                     ],
+//                   ),
+//                 ),
+//               ),
+//               const Divider(color: Color(0x1AFFFFFF)),
+//               Padding(
+//                 padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
+//                 child: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Text(
+//                       user.fullName,
+//                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500, height: 1.6),
+//                     ),
+//                     Text(
+//                       company == null ? user.roleLabel : '${user.roleLabel} · $company',
+//                       style: const TextStyle(color: AppColors.sidebarText, fontSize: 13, height: 1.6),
+//                     ),
+//                     Text(
+//                       user.username,
+//                       textDirection: TextDirection.ltr,
+//                       style: const TextStyle(color: AppColors.sidebarText, fontSize: 13, height: 1.6),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+// 
+// class _NavItem extends StatelessWidget {
+//   const _NavItem({required this.label, required this.icon, required this.active, required this.onTap});
+// 
+//   final String label;
+//   final IconData icon;
+//   final bool active;
+//   final VoidCallback onTap;
+// 
+//   @override
+//   Widget build(BuildContext context) {
+//     final color = active ? Colors.white : AppColors.sidebarText;
+//     return Padding(
+//       padding: const EdgeInsets.only(bottom: 2),
+//       child: Material(
+//         color: active ? AppColors.primary : Colors.transparent,
+//         borderRadius: BorderRadius.circular(radiusSmall),
+//         child: InkWell(
+//           borderRadius: BorderRadius.circular(radiusSmall),
+//           hoverColor: AppColors.sidebarHover,
+//           onTap: onTap,
+//           child: Semantics(
+//             selected: active,
+//             child: Padding(
+//               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+//               child: Row(
+//                 children: [
+//                   Icon(icon, size: 20, color: color),
+//                   const SizedBox(width: 10),
+//                   Expanded(
+//                     child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w500)),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+// 
+// /// Shown instead of a page that the signed-in user may not see.
+class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.location, required this.child});
-
-  /// The path of the page that [child] shows.
   final String location;
   final Widget child;
-
   @override
-  ConsumerState<AppShell> createState() => _AppShellState();
-}
-
-class _AppShellState extends ConsumerState<AppShell> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  bool _leaving = false;
-
-  void _go(String path) {
-    _scaffoldKey.currentState?.closeDrawer();
-    context.go(path);
-  }
-
-  Future<void> _logout() async {
-    if (_leaving) return;
-    setState(() => _leaving = true);
-    // Taken before the session ends: afterwards this screen is gone.
-    final router = GoRouter.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-    await ref.read(apiClientProvider).logout();
-    router.go(AppPaths.login);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(const SnackBar(content: Text('از حساب کاربری خود خارج شدید.')));
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
-    // The session has just ended; the router is about to show the login screen.
-    if (auth == null) return const Scaffold(body: LoadingBlock(text: 'در حال خروج…'));
-
-    final wide = MediaQuery.sizeOf(context).width >= _wideLayout;
-    final sidebar = _Sidebar(auth: auth, activePath: navPathOf(widget.location), onGo: _go);
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: wide ? null : Drawer(width: 272, backgroundColor: AppColors.sidebar, child: sidebar),
-      body: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (wide) SizedBox(width: 256, child: sidebar),
-            // The key keeps the page (and what was typed into it) when the window is resized across the breakpoint.
-            Expanded(
-              key: const ValueKey<String>('page'),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _TopBar(
-                    title: titleOf(widget.location),
-                    compact: !wide,
-                    onMenu: () => _scaffoldKey.currentState?.openDrawer(),
-                    onProfile: () => _go(AppPaths.profile),
-                    onLogout: _leaving ? null : _logout,
-                  ),
-                  Expanded(child: widget.child),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    final admin = auth?.user.role == 'SUPER_ADMIN';
+    return Scaffold(body: SafeArea(child: Column(children: [
+      Container(color: AppColors.primary, padding: const EdgeInsets.all(16), child: Wrap(spacing: 12, runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center, children: [
+          const Text('کنترل ترانسپورت', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+          TextButton(style: TextButton.styleFrom(foregroundColor: Colors.white), onPressed: () => context.go('/dashboard'), child: const Text('صفحه اول')),
+          if (admin) TextButton(style: TextButton.styleFrom(foregroundColor: Colors.white), onPressed: () => context.go('/companies'), child: const Text('لیست شرکت‌ها')),
+          if (admin) TextButton(style: TextButton.styleFrom(foregroundColor: Colors.white), onPressed: () => context.go('/employees'), child: const Text('مدیریت کارمند')),
+          TextButton(style: TextButton.styleFrom(foregroundColor: Colors.white), onPressed: () async {
+            final router = GoRouter.of(context); await ref.read(apiClientProvider).logout(); router.go('/login');
+          }, child: const Text('خروج')),
+        ])),
+      Expanded(child: child),
+    ])));
   }
 }
 
-/// The bar above the page: its title, and the way to the own account and out of the app.
-class _TopBar extends StatelessWidget {
-  const _TopBar({
-    required this.title,
-    required this.compact,
-    required this.onMenu,
-    required this.onProfile,
-    required this.onLogout,
-  });
-
-  final String title;
-
-  /// On a narrow screen: a button for the navigation drawer, and icons instead of labelled buttons.
-  final bool compact;
-  final VoidCallback onMenu;
-  final VoidCallback onProfile;
-  final VoidCallback? onLogout;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 56,
-      padding: EdgeInsetsDirectional.only(start: compact ? 4 : 24, end: compact ? 4 : 16),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          if (compact) ...[
-            IconButton(tooltip: 'فهرست اصلی', onPressed: onMenu, icon: const Icon(Icons.menu)),
-            const SizedBox(width: 4),
-          ],
-          Expanded(
-            child: Semantics(
-              header: true,
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
-          if (compact) ...[
-            IconButton(tooltip: 'حساب کاربری', onPressed: onProfile, icon: const Icon(Icons.person_outline)),
-            IconButton(tooltip: 'خروج', onPressed: onLogout, icon: const Icon(Icons.logout)),
-          ] else ...[
-            TextButton.icon(
-              onPressed: onProfile,
-              icon: const Icon(Icons.person_outline, size: 18),
-              label: const Text('حساب کاربری'),
-            ),
-            const SizedBox(width: 4),
-            TextButton.icon(onPressed: onLogout, icon: const Icon(Icons.logout, size: 18), label: const Text('خروج')),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _Sidebar extends StatelessWidget {
-  const _Sidebar({required this.auth, required this.activePath, required this.onGo});
-
-  final AuthSession auth;
-  final String? activePath;
-  final void Function(String path) onGo;
-
-  @override
-  Widget build(BuildContext context) {
-    final user = auth.user;
-    final company = user.company?.name;
-    return Material(
-      color: AppColors.sidebar,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(8, 6, 8, 18),
-                child: Align(alignment: AlignmentDirectional.centerStart, child: Brand(color: Colors.white)),
-              ),
-              Expanded(
-                child: Semantics(
-                  label: 'فهرست اصلی',
-                  container: true,
-                  child: ListView(
-                    padding: EdgeInsets.zero,
-                    children: [
-                      for (final entry in navEntries)
-                        if (auth.can(entry.permission))
-                          _NavItem(
-                            label: entry.label,
-                            icon: _navIcons[entry.path] ?? Icons.circle_outlined,
-                            active: entry.path == activePath,
-                            onTap: () => onGo(entry.path),
-                          ),
-                    ],
-                  ),
-                ),
-              ),
-              const Divider(color: Color(0x1AFFFFFF)),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 12, 8, 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.fullName,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500, height: 1.6),
-                    ),
-                    Text(
-                      company == null ? user.roleLabel : '${user.roleLabel} · $company',
-                      style: const TextStyle(color: AppColors.sidebarText, fontSize: 13, height: 1.6),
-                    ),
-                    Text(
-                      user.username,
-                      textDirection: TextDirection.ltr,
-                      style: const TextStyle(color: AppColors.sidebarText, fontSize: 13, height: 1.6),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({required this.label, required this.icon, required this.active, required this.onTap});
-
-  final String label;
-  final IconData icon;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? Colors.white : AppColors.sidebarText;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: Material(
-        color: active ? AppColors.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(radiusSmall),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(radiusSmall),
-          hoverColor: AppColors.sidebarHover,
-          onTap: onTap,
-          child: Semantics(
-            selected: active,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-              child: Row(
-                children: [
-                  Icon(icon, size: 20, color: color),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w500)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Shown instead of a page that the signed-in user may not see.
 class ForbiddenPage extends StatelessWidget {
   const ForbiddenPage({super.key});
 

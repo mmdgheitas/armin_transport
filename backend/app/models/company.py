@@ -2,13 +2,22 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, String, Text, UniqueConstraint, true
-from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
+from typing import TYPE_CHECKING
 
+from sqlalchemy import Boolean, String, Text, UniqueConstraint, select, true
+from sqlalchemy.orm import Mapped, mapped_column, object_session
+
+from app.core.db_types import UTCDateTime
 from app.models.base import TABLE_OPTIONS, Model, TimestampMixin, UUIDPrimaryKeyMixin
+
+if TYPE_CHECKING:
+    from app.models.audit_log import AuditLog
 
 
 class Company(UUIDPrimaryKeyMixin, TimestampMixin, Model):
+    deleted_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
     __tablename__ = "companies"
     __table_args__ = (UniqueConstraint("company_code"), TABLE_OPTIONS)
 
@@ -17,3 +26,19 @@ class Company(UUIDPrimaryKeyMixin, TimestampMixin, Model):
     phone: Mapped[str | None] = mapped_column(String(30))
     address: Mapped[str | None] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=true())
+
+    @property
+    def last_activity(self) -> AuditLog | None:
+        # Lazy imports avoid the Company → User → AuditLog model cycle.
+        from app.models.audit_log import AuditLog  # noqa: PLC0415
+        from app.modules.audit_logs.service import COMPANY_WORK_ACTIONS  # noqa: PLC0415
+
+        session = object_session(self)
+        if session is None:
+            return None
+        return session.scalar(
+            select(AuditLog)
+            .where(AuditLog.company_id == self.id, AuditLog.action.in_(COMPANY_WORK_ACTIONS))
+            .order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
+            .limit(1)
+        )

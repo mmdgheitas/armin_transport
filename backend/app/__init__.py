@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 from flask import Blueprint, Flask
@@ -29,6 +30,8 @@ from app.modules.documents.routes import bp as documents_bp
 from app.modules.health.routes import bp as health_bp
 from app.modules.product_fields.routes import bp as product_fields_bp
 from app.modules.shipments.routes import bp as shipments_bp
+from app.modules.transport import crud as _transport_crud  # noqa: F401
+from app.modules.transport.routes import bp as transport_bp
 from app.modules.users.routes import bp as users_bp
 from app.web import create_web_blueprint
 
@@ -36,7 +39,7 @@ API_PREFIX = "/api/v1"
 
 
 def _configure_sqlite(app: Flask) -> None:
-    """Make SQLite (test fallback only) honour foreign keys and SAVEPOINT semantics."""
+    """Configure SQLite for persistent use: foreign keys, WAL and explicit transactions."""
     with app.app_context():
         engine = db.engine
 
@@ -46,7 +49,9 @@ def _configure_sqlite(app: Flask) -> None:
         dbapi_connection.isolation_level = None
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA busy_timeout=30000")
         cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=FULL")
         cursor.close()
 
     @event.listens_for(engine, "begin")
@@ -69,6 +74,7 @@ def _register_blueprints(app: Flask) -> None:
         health_bp,
         auth_bp,
         dashboard_bp,
+        transport_bp,
         companies_bp,
         users_bp,
         shipments_bp,
@@ -100,6 +106,8 @@ def create_app(env_name: str | None = None, overrides: Mapping[str, Any] | None 
         count = settings.trusted_proxy_count
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=count, x_proto=count, x_host=count)  # type: ignore[method-assign]
 
+    # Flask resolves relative SQLite filenames under this private instance directory.
+    Path(app.instance_path).mkdir(parents=True, exist_ok=True)
     db.init_app(app)
     migrate.init_app(app, db, directory=str(BACKEND_ROOT / "migrations"), compare_type=True)
     if settings.database_dialect == "sqlite":

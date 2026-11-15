@@ -69,7 +69,7 @@ export function trackPage(ctx) {
       }
       withBusyButton(submit, async () => {
         try {
-          const { data } = await ctx.api.post('/customer/lookup', { auth: false, json: { tracking_code: code }, signal: ctx.signal });
+          const { data } = await ctx.api.post('/customer/lookup', { json: { tracking_code: code }, signal: ctx.signal });
           const grant = { token: data.access_token, expiresAt: data.expires_at };
           storeGrant(grant);
           showShipment(grant);
@@ -105,7 +105,7 @@ export function trackPage(ctx) {
     const load = async (page) => {
       mount(body, loadingBlock());
       try {
-        const { data } = await ctx.api.get(accessPath(grant, '/documents'), { auth: false, query: { page, per_page: 20 }, signal: ctx.signal });
+        const { data } = await ctx.api.get(accessPath(grant, '/documents'), { query: { page, per_page: 20 }, signal: ctx.signal });
         if (ctx.signal.aborted) return;
         if (data.items.length === 0) {
           mount(body, emptyBlock({ iconName: 'file', title: 'سندی برای این محموله در دسترس نیست.' }));
@@ -121,7 +121,7 @@ export function trackPage(ctx) {
               button.addEventListener('click', () =>
                 withBusyButton(button, async () => {
                   try {
-                    const file = await ctx.api.download(accessPath(grant, `/documents/${item.id}/download`), { auth: false });
+                    const file = await ctx.api.download(accessPath(grant, `/documents/${item.id}/download`), {});
                     saveBlob(file.blob, file.filename === 'download' ? item.name : file.filename);
                   } catch (error) {
                     if (isSessionOver(error)) endLocally(SESSION_ENDED);
@@ -159,7 +159,7 @@ export function trackPage(ctx) {
     mount(host, loadingBlock('در حال دریافت اطلاعات محموله…'));
     let shipment;
     try {
-      shipment = (await ctx.api.get(accessPath(grant, '/shipment'), { auth: false, signal: ctx.signal })).data;
+      shipment = (await ctx.api.get(accessPath(grant, '/shipment'), { signal: ctx.signal })).data;
     } catch (error) {
       if (isAbortError(error) || ctx.signal.aborted) return;
       if (isSessionOver(error)) endLocally(SESSION_ENDED);
@@ -172,7 +172,7 @@ export function trackPage(ctx) {
     finish.addEventListener('click', () =>
       withBusyButton(finish, async () => {
         try {
-          await ctx.api.post(accessPath(grant, '/revoke'), { auth: false });
+          await ctx.api.post(accessPath(grant, '/revoke'), {});
         } catch {
           // The session expires on its own shortly; ending it locally is what matters to the visitor.
         }

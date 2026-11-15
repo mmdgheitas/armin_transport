@@ -89,9 +89,11 @@ class AuthService:
 
     @staticmethod
     def _account_block_reason(user: User) -> str | None:
-        if not user.is_active:
+        if user.deleted_at is not None or not user.is_active:
             return "account_disabled"
-        if user.role is UserRole.EMPLOYEE and (user.company is None or not user.company.is_active):
+        if user.role is UserRole.CUSTOMER and (
+            user.company is None or user.company.deleted_at is not None or not user.company.is_active
+        ):
             return "company_inactive"
         return None
 

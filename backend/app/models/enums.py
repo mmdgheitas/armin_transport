@@ -8,6 +8,7 @@ import enum
 class UserRole(enum.StrEnum):
     SUPER_ADMIN = "SUPER_ADMIN"
     EMPLOYEE = "EMPLOYEE"
+    CUSTOMER = "CUSTOMER"
 
 
 class TrackingCodeType(enum.StrEnum):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from app.core import fields
 from app.core.schemas import InputSchema, OutputSchema, PaginationQuerySchema
+from app.modules.audit_logs.schemas import CompanyActivitySchema
 
 COMPANY_CODE_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9_-]{1,49}$"
 _CODE_MESSAGE = "کد شرکت باید ۲ تا ۵۰ نویسه و فقط شامل حروف انگلیسی، رقم، خط تیره و زیرخط باشد."
@@ -12,6 +13,10 @@ _PHONE_MESSAGE = "شمارهٔ تلفن فقط می‌تواند شامل رقم
 
 
 class CompanyCreateSchema(InputSchema):
+    username = fields.String(
+        required=True, validate=fields.regexp(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,99}$", "نام کاربری معتبر وارد کنید.")
+    )
+    password = fields.String(required=True, strip=False, validate=fields.length(min=1, max=128))
     name = fields.String(required=True, validate=fields.length(min=2, max=200))
     company_code = fields.String(required=True, validate=fields.regexp(COMPANY_CODE_PATTERN, _CODE_MESSAGE))
     phone = fields.String(allow_none=True, validate=fields.regexp(_PHONE_PATTERN, _PHONE_MESSAGE))
@@ -33,6 +38,7 @@ class CompanyQuerySchema(PaginationQuerySchema):
 
 
 class CompanySchema(OutputSchema):
+    last_activity = fields.Nested(CompanyActivitySchema, allow_none=True)
     id = fields.UUID()
     name = fields.String()
     company_code = fields.String()
@@ -49,6 +55,7 @@ class CompanyDetailSchema(CompanySchema):
 
 
 class CompanyRefSchema(OutputSchema):
+    last_activity = fields.Nested(CompanyActivitySchema, allow_none=True)
     """Compact company reference embedded in other resources."""
 
     id = fields.UUID()

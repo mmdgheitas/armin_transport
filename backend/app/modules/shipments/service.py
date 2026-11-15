@@ -6,6 +6,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, scoped_session
 
@@ -22,7 +23,7 @@ from app.core.errors import (
 from app.core.pagination import Page
 from app.core.permissions import Permission
 from app.core.transactions import unit_of_work
-from app.models import Company, Shipment, ShipmentStatus, TrackingCodeHistory, TrackingCodeType
+from app.models import Company, Shipment, ShipmentAssignment, ShipmentStatus, TrackingCodeHistory, TrackingCodeType
 from app.modules.audit_logs.service import AuditService
 from app.modules.companies.repository import CompanyRepository
 from app.modules.customer_access.repository import CustomerSessionRepository
@@ -92,17 +93,32 @@ class ShipmentService:
         A shipment of another company is indistinguishable from a missing one (404).
         """
         shipment = self._shipments.get_scoped(shipment_id, self.scope_company_id(actor), for_update=for_update)
-        if shipment is None:
+        if shipment is None or shipment.deleted_at is not None or shipment.company.deleted_at is not None:
             raise NotFoundError("محمولهٔ موردنظر یافت نشد.")
+        if shipment.transport_enabled and actor.role.value == "EMPLOYEE":
+            assignment = self._session.scalar(
+                select(ShipmentAssignment).where(
+                    ShipmentAssignment.shipment_id == shipment.id, ShipmentAssignment.user_id == actor.user_id
+                )
+            )
+            if assignment is None:
+                raise NotFoundError("محمولهٔ موردنظر یافت نشد.")
         return shipment
+
+    @staticmethod
+    def require_transport_admin(actor: Actor, shipment: Shipment) -> None:
+        if shipment.transport_enabled and actor.role.value != "SUPER_ADMIN":
+            raise PermissionDeniedError("ویرایش بار ترانسپورت فقط برای ادمین مجاز است.")
 
     @staticmethod
     def ensure_writable(shipment: Shipment) -> None:
         if shipment.status is ShipmentStatus.ARCHIVED:
             raise ConflictError("این محموله بایگانی شده است و قابل تغییر نیست.", code="shipment_archived")
 
-    def _view(self, shipment: Shipment) -> ShipmentView:
-        counts = self._shipments.document_counts([shipment.id])
+    def _view(self, shipment: Shipment, actor: Actor) -> ShipmentView:
+        counts = self._shipments.document_counts(
+            [shipment.id], actor.user_id if actor.role.value == "EMPLOYEE" else None
+        )
         return ShipmentView(shipment=shipment, document_count=counts.get(shipment.id, 0))
 
     # ------------------------------------------------------------------ tracking codes
@@ -180,13 +196,17 @@ class ShipmentService:
     ) -> Page[ShipmentView]:
         if filters.get("tracking_code"):
             filters["tracking_code"] = normalize_tracking_code(filters["tracking_code"])
+        if actor.role.value == "EMPLOYEE":
+            filters["assigned_user_id"] = actor.user_id
         page = self._shipments.search(company_id=self._resolve_list_scope(actor, company_id), **filters)
-        counts = self._shipments.document_counts([shipment.id for shipment in page.items])
+        counts = self._shipments.document_counts(
+            [shipment.id for shipment in page.items], actor.user_id if actor.role.value == "EMPLOYEE" else None
+        )
         views = [ShipmentView(shipment=item, document_count=counts.get(item.id, 0)) for item in page.items]
         return Page(items=views, total=page.total, page=page.page, per_page=page.per_page)
 
     def get(self, actor: Actor, shipment_id: uuid.UUID) -> ShipmentView:
-        return self._view(self.get_entity(actor, shipment_id))
+        return self._view(self.get_entity(actor, shipment_id), actor)
 
     def tracking_history(
         self, actor: Actor, shipment_id: uuid.UUID, page: int, per_page: int
@@ -246,7 +266,7 @@ class ShipmentService:
                     "product_fields": product_summary,
                 },
             )
-        return self._view(shipment)
+        return self._view(shipment, actor)
 
     def update(self, actor: Actor, shipment_id: uuid.UUID, data: dict[str, Any]) -> ShipmentView:
         if data.get("product_values") is not None:
@@ -254,6 +274,7 @@ class ShipmentService:
 
         with unit_of_work(self._session):
             shipment = self.get_entity(actor, shipment_id, for_update=True)
+            self.require_transport_admin(actor, shipment)
             self.ensure_writable(shipment)
             changes: dict[str, Any] = {}
             if "description" in data:
@@ -274,7 +295,7 @@ class ShipmentService:
                 self._audit.record(
                     "SHIPMENT_UPDATED", "shipment", shipment.id, actor_id=actor.user_id, metadata={"changes": changes}
                 )
-        return self._view(shipment)
+        return self._view(shipment, actor)
 
     def _change_code(
         self, actor: Actor, shipment: Shipment, raw_code: str | None, *, allow_same: bool = False
@@ -305,14 +326,16 @@ class ShipmentService:
         """Assign ``raw_code`` (manual) or, when it is ``None``, a freshly generated code."""
         with unit_of_work(self._session):
             shipment = self.get_entity(actor, shipment_id, for_update=True)
+            self.require_transport_admin(actor, shipment)
             self.ensure_writable(shipment)
             self._change_code(actor, shipment, raw_code)
             shipment.updated_at = utcnow()
-        return self._view(shipment)
+        return self._view(shipment, actor)
 
     def archive(self, actor: Actor, shipment_id: uuid.UUID) -> ShipmentView:
         with unit_of_work(self._session):
             shipment = self.get_entity(actor, shipment_id, for_update=True)
+            self.require_transport_admin(actor, shipment)
             if shipment.status is ShipmentStatus.ARCHIVED:
                 raise ConflictError("این محموله قبلاً بایگانی شده است.", code="shipment_archived")
             shipment.status = ShipmentStatus.ARCHIVED
@@ -326,20 +349,22 @@ class ShipmentService:
                 actor_id=actor.user_id,
                 metadata={"revoked_customer_sessions": revoked},
             )
-        return self._view(shipment)
+        return self._view(shipment, actor)
 
     def unarchive(self, actor: Actor, shipment_id: uuid.UUID) -> ShipmentView:
         with unit_of_work(self._session):
             shipment = self.get_entity(actor, shipment_id, for_update=True)
+            self.require_transport_admin(actor, shipment)
             if shipment.status is ShipmentStatus.ACTIVE:
                 raise ConflictError("این محموله بایگانی نشده است.", code="shipment_not_archived")
             shipment.status = ShipmentStatus.ACTIVE
             self._audit.record("SHIPMENT_UNARCHIVED", "shipment", shipment.id, actor_id=actor.user_id)
-        return self._view(shipment)
+        return self._view(shipment, actor)
 
     def set_product_values(self, actor: Actor, shipment_id: uuid.UUID, values: dict[str, Any]) -> ProductValues:
         with unit_of_work(self._session):
             shipment = self.get_entity(actor, shipment_id, for_update=True)
+            self.require_transport_admin(actor, shipment)
             self.ensure_writable(shipment)
             summary = self._product_values.apply(shipment, values)
             if summary["changed"] or summary["removed"]:
@@ -352,6 +377,7 @@ class ShipmentService:
     def revoke_customer_sessions(self, actor: Actor, shipment_id: uuid.UUID) -> int:
         with unit_of_work(self._session):
             shipment = self.get_entity(actor, shipment_id)
+            self.require_transport_admin(actor, shipment)
             revoked = self._customer_sessions.revoke_for_shipment(shipment.id, utcnow())
             self._audit.record(
                 "CUSTOMER_SESSIONS_REVOKED",
